@@ -1,37 +1,17 @@
+import sys
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
-from torchvision.datasets import MNIST
-from torchvision import transforms
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-class FcNet(nn.Module):
-    def __init__(self,input_shape,output_shape=7):
-        super().__init__()
-
-        self.fc1 = nn.Linear(input_shape, 200)
-        self.fc2 = nn.Linear(200, 100)
-        self.fc3 = nn.Linear(100, 50)
-        self.fc4 = nn.Linear(50, output_shape)
-
-    def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.fc4(x)
-        return x
-
-
+from networks.pytorch.nn_utils import FcNet
 
 
 class LitClusterNet(pl.LightningModule):
     def __init__(self,input_shape,config,**kwargs):
         super().__init__()
-
 
         self.net = FcNet(input_shape,config.MODEL.OUTPUT_SHAPE)
 
@@ -43,8 +23,6 @@ class LitClusterNet(pl.LightningModule):
         self.save_hyperparameters()
 
     def forward(self, x):
-        # embedding = self.encoder(x)
-        # return embedding
         return self.net(x)
 
     def configure_optimizers(self):

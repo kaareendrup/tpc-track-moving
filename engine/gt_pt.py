@@ -1,13 +1,9 @@
 import sys
 
-sys.path.append("/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir")
-
-
 from tpcutils.data import TPCClusterDataset
 from tpcutils.dot_not import AttributeDict,Struct
 
-from networks.pytorch.nn_pt import FcNet,LitClusterNet
-#from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TerminateOnNaN
+from networks.pytorch.nn_lightning import FcNet,LitClusterNet
 from matplotlib import pyplot as plt
 import pandas as pd
 from sklearn.metrics import roc_curve, auc
@@ -24,22 +20,25 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-def generalised_trainer_TF_clusters(**kwargs):
+def generalised_trainer_PT_clusters(**kwargs):
 
 
     config = Struct(**yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
-
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     dataset = TPCClusterDataset(files[0],files[3],transform=config.DATA_PARAMS.NORMALIZE)
 
     dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
-    train_loader = DataLoader(dataset_train, batch_size=config.HYPER_PARAMS.BATCH_SIZE)
-    val_loader = DataLoader(dataset_valid, batch_size=config.HYPER_PARAMS.BATCH_SIZE)
+    train_loader = DataLoader(dataset_train,
+                              batch_size=config.HYPER_PARAMS.BATCH_SIZE,
+                              shuffle=config.DATA_PARAMS.SHUFFLE_TRAIN)
+    val_loader = DataLoader(dataset_valid,
+                            batch_size=config.HYPER_PARAMS.BATCH_SIZE,
+                            shuffle=config.DATA_PARAMS.SHUFFLE_VALID)
 
 
-    model = LitClusterNet(dataset.__getitem__(0)[0].shape[0],config)
+    model = LitClusterNet(dataset._shape(),config)
 
     logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH)
     # training
@@ -77,4 +76,4 @@ def generalised_trainer_TF_clusters(**kwargs):
 
 if __name__=='__main__':
 
-    generalised_trainer_TF_clusters()
+    generalised_trainer_PT_clusters()

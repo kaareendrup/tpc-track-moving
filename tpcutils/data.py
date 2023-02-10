@@ -1,5 +1,4 @@
 import sys,os
-sys.path.append("/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir")
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -7,8 +6,6 @@ from sklearn.model_selection import train_test_split
 
 import torch
 from torch.utils.data import Dataset
-#from torchvision import datasets
-#from torchvision.transforms import ToTensor
 
 import copy
 
@@ -173,6 +170,9 @@ class TPCClusterDataset(Dataset):
 
     def _transform(self,array):
         return (array - array.min())/(array.max()-array.min())
+
+    def _shape(self,):
+        return self.X[0,:].shape[0]
 
 
 
