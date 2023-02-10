@@ -3,3 +3,5 @@ __pycache__
 notebooks
 *tf*
 tensorflow
+test_scripts
+__init__.py
