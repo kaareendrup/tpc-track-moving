@@ -55,9 +55,11 @@ def read_nonMC_tracks(data_path):
 
     sector_data = Track.iloc[:,len(data_names):len(data_names)+nClusters]
 
+    row_data = Track.iloc[:,len(data_names)+nClusters:len(data_names)+nClusters*2]
+
     mP_vector_data = Track.iloc[:,0:len(data_names)-(15+2)]
 
-    return cluster_xyz_data, sector_data, mP_vector_data
+    return cluster_xyz_data, sector_data, row_data, mP_vector_data
 
 
 def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack):
@@ -80,13 +82,16 @@ def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack):
 
 def GetClusterData(data,i=0,nTPCclusters=20):
 
-    clusters_xyz, sectors, XmP = data
+    clusters_xyz, sectors, pad_rows, XmP = data
 
     x_new,y_new,z_new = get_clusters_xyz_lab_coord(clusters_xyz,sectors,i)
 
     idx = np.round(np.linspace(0, len(x_new) - 1, nTPCclusters)).astype(int)
 
-    return XmP.iloc[[i]].to_numpy().squeeze(), x_new[idx], y_new[idx], z_new[idx]
+    pads = pad_rows.iloc[[i]].to_numpy().squeeze()
+
+
+    return XmP.iloc[[i]].to_numpy().squeeze(), x_new[idx], y_new[idx], z_new[idx], pads[idx]
 
 def read_MC_tracks(data_path):
 
@@ -118,6 +123,39 @@ def DataHandler(path,nTPCclusters=20):
         X.append(temp2)
 
     return np.array(X)
+
+def SeparatedDataHandler(path,nTPCclusters=20):
+    """
+        Data handler for generating xmp vector, 3xN cluster vector plus 1xN row vector
+    """
+    data = read_nonMC_tracks(path)
+
+    iTracks = data[0].shape[0]
+    fXAmP = []
+    fx = []
+    fy = []
+    fz = []
+    fpads = []
+    for track in range(iTracks):
+        XAmP, x,y,z, pad_rows = GetClusterData(data,track,nTPCclusters)
+
+        fXAmP.append(XAmP)
+        fx.append(x)
+        fy.append(y)
+        fz.append(z)
+        fpads.append(pad_rows)
+
+    fx = np.array(fx)
+    fy = np.array(fy)
+    fz = np.array(fz)
+
+
+    data_dict = {}
+    data_dict['xamP'] = np.array(fXAmP)
+    data_dict['xyz'] = np.array([fx,fy,fz]).transpose(1,0,2)
+    data_dict['pads'] = np.array(fpads)
+
+    return data_dict
 
 
 def getAllData(tracks_path,mc_path, test_size=0.25, random_state=42):
@@ -174,7 +212,54 @@ class TPCClusterDataset(Dataset):
     def _shape(self,):
         return self.X[0,:].shape[0]
 
+class TPCClusterDatasetConvolutional(Dataset):
+    def __init__(self, tracks_path, mc_path,nTPCclusters=20, transform=False):
 
+        self.X = SeparatedDataHandler(tracks_path,nTPCclusters)
+        self.y = read_MC_tracks(mc_path)
+
+        self.x = np.column_stack((self.X['xyz'],self.X['pads'][:,np.newaxis,:]))
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+
+        x = self.x[idx,...]
+        xamP = self.X['xamP'][idx,...]
+
+
+
+        y = self.y[idx,...]
+
+
+
+
+        if self.transform:
+            x = self._transform(x)
+            y = self._transform(y)
+
+
+
+        # x_tensor = torch.tensor(x,dtype=torch.float64)
+        # y_tensor = torch.tensor(y,dtype=torch.float64)
+        x_tensor = torch.from_numpy(x).float().unsqueeze(0)
+        y_tensor = torch.from_numpy(y).float()
+
+        mP_tensor = torch.from_numpy(xamP).float()
+
+
+        tensor_data = {}
+        tensor_data['input_xyz_row'] = x_tensor
+        tensor_data['mP'] = mP_tensor
+        tensor_data['target'] = y_tensor
+
+        return tensor_data
+
+    def _transform(self,array):
+        return (array - array.min())/(array.max()-array.min())
 
 
 

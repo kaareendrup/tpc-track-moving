@@ -128,3 +128,31 @@ class DeepConvNet(nn.Module):
 
 
         return x
+
+
+class DeepConvSimpleNet(nn.Module):
+    """
+        Use this net for the 3xN + 1xN vector cluster coords + row number
+    """
+    def __init__(self,in_channels,out_channels,filter):
+        super(DeepConvSimpleNet,self).__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.filter = filter
+
+        self.conv1 = EncodeLayer(self.in_channels,self.filter)
+        self.fc = nn.Linear(self.filter*2, self.out_channels)
+
+        self.fc11 = nn.Linear(7, 16)
+        self.fc12 = nn.Linear(16, out_channels)
+
+
+    def forward(self,x_3vec,xmP):
+        x_3vec = self.conv1(x_3vec)
+        x_out1 = self.fc(x_3vec.flatten())
+
+        xmP = F.relu(self.fc11(xmP))
+        xmP = self.fc12(xmP)
+
+        return x_out1+xmP
