@@ -20,10 +20,13 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
+from config.paths import dpaths as dp
+
+
 def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
 
-    config = Struct(**yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
+    config = Struct(**yaml.safe_load(open(dp['config'])))
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     dataset = TPCClusterDatasetConvolutional(files[0],files[3],
