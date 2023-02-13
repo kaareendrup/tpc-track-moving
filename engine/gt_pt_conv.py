@@ -1,7 +1,6 @@
 import sys
 
 from tpcutils.data import TPCClusterDatasetConvolutional
-from tpcutils.dot_not import AttributeDict,Struct
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
 from matplotlib import pyplot as plt
@@ -19,6 +18,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveragi
 from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
+import io
+from dotmap import DotMap
 
 from config.paths import dpaths as dp
 
@@ -26,7 +27,7 @@ from config.paths import dpaths as dp
 def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
 
-    config = Struct(**yaml.safe_load(open(dp['config'])))
+    config = DotMap(yaml.safe_load(open(dp['config1'])))
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     dataset = TPCClusterDatasetConvolutional(files[0],files[3],
@@ -48,7 +49,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
     #input shape: 7+nClustersSelected*3 # not for conv
     model = LitClusterConvolutionalNet(config)
 
-    logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH)
+    logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
     # training
     trainer = pl.Trainer(
                     num_nodes=config.PYTORCH_LIGHTNING_PARAMS.NUM_NODES,
@@ -75,7 +76,9 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
     trainer.fit(model, train_loader, val_loader,)
 
 
-
+    # Write YAML file
+    with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:
+        yaml.dump(config.toDict(),outfile)
 
 
 

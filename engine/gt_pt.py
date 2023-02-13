@@ -1,7 +1,6 @@
 import sys
 
 from tpcutils.data import TPCClusterDataset
-from tpcutils.dot_not import AttributeDict,Struct
 
 from networks.pytorch.nn_lightning import FcNet,LitClusterNet
 from matplotlib import pyplot as plt
@@ -19,13 +18,17 @@ from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveragi
 from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
+import io
+
+from dotmap import DotMap
 
 from config.paths import dpaths as dp
 
 def generalised_trainer_PT_clusters(**kwargs):
 
 
-    config = Struct(**yaml.safe_load(open(dp['config'])))
+    # config = Struct(**yaml.safe_load(open(dp['config1'])))
+    config = DotMap(yaml.safe_load(open(dp['config1'])))
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     dataset = TPCClusterDataset(files[0],files[3],transform=config.DATA_PARAMS.NORMALIZE)
@@ -43,7 +46,7 @@ def generalised_trainer_PT_clusters(**kwargs):
     #input shape: 7+nClustersSelected*3
     model = LitClusterNet(dataset._shape(),config)
 
-    logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH)
+    logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
     # training
     trainer = pl.Trainer(
                     num_nodes=config.PYTORCH_LIGHTNING_PARAMS.NUM_NODES,
@@ -71,6 +74,8 @@ def generalised_trainer_PT_clusters(**kwargs):
 
 
 
+    with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:
+        yaml.dump(config.toDict(),outfile)
 
 
 

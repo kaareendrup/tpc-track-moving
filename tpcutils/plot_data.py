@@ -11,16 +11,15 @@ import glob
 
 import argparse
 
+from config.paths import dpaths as dp
+
 def main(args):
-
-    data_path = '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/data_files'
-
     # iEntry << " " << mX << " " << mAlpha << " " << mY << " " << mZ << " " << Snp << " " << Tgl << " " << Q2Pt << " " << bcTB << " " << dz << " ";
     data_names = ["X","alpha","Y","Z","sin_phi","tgLambda","q2pt","bcTB","dz","cov1","cov2","cov3","cov4","cov5","cov6","cov7","cov8",
                      "cov9","cov10","cov11","cov12","cov13","cov14","cov15"]
 
 
-    files = glob.glob(data_path + '/*.txt')
+    files = glob.glob(dp['data_path'] + '/*.txt')
     for fi in files:
         temp = fi.split('/')[-1]
         # print(temp)

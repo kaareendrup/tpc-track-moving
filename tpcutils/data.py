@@ -213,10 +213,13 @@ class TPCClusterDataset(Dataset):
         return self.X[0,:].shape[0]
 
 class TPCClusterDatasetConvolutional(Dataset):
-    def __init__(self, tracks_path, mc_path,nTPCclusters=20, transform=False):
+    def __init__(self, tracks_path, mc_path,nTPCclusters=20, transform=False,tpcNorm=True):
 
         self.X = SeparatedDataHandler(tracks_path,nTPCclusters)
         self.y = read_MC_tracks(mc_path)
+
+        if tpcNorm:
+            self.X['xyz'] = (self.X['xyz'] + 260)/(260+260)
 
         self.x = np.column_stack((self.X['xyz'],self.X['pads'][:,np.newaxis,:]))
 
