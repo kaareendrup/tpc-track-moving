@@ -21,7 +21,7 @@ def main(select = 'iterationConv1'):
     config = DotMap(yaml.safe_load(open(config_sel)))
 
 
-    Net = LitClusterConvolutionalNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + 'iterationConv1/FcConvNet_*.ckpt')[0])
+    Net = LitClusterConvolutionalNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + select + '/' + '*.ckpt')[0])
     Net.eval()
 
 
