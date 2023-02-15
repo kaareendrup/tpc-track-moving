@@ -158,10 +158,10 @@ def SeparatedDataHandler(path,nTPCclusters=20):
     return data_dict
 
 
-def getAllData(tracks_path,mc_path, test_size=0.25, random_state=42):
+def getAllData(tracks_path,mov_path, test_size=0.25, random_state=42):
 
     X = DataHandler(tracks_path)
-    y = read_MC_tracks(mc_path)
+    y = SeparatedDataHandler(mov_path)
 
     X_scaled = copy.deepcopy(X)
     y_scaled = copy.deepcopy(y)
@@ -179,10 +179,10 @@ def getAllData(tracks_path,mc_path, test_size=0.25, random_state=42):
 #### PYTORCH
 
 class TPCClusterDataset(Dataset):
-    def __init__(self, tracks_path, mc_path, transform=False):
+    def __init__(self, tracks_path, mov_path, transform=False):
 
         self.X = DataHandler(tracks_path)
-        self.y = read_MC_tracks(mc_path)
+        self.y = DataHandler(mov_path)
 
 
         self.transform = transform
@@ -210,13 +210,14 @@ class TPCClusterDataset(Dataset):
         return (array - array.min())/(array.max()-array.min())
 
     def _shape(self,):
-        return self.X[0,:].shape[0]
+        return self.X[2,:].shape[0]
 
 class TPCClusterDatasetConvolutional(Dataset):
-    def __init__(self, tracks_path, mc_path,nTPCclusters=20, transform=False,tpcNorm=True):
+    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=True):
 
         self.X = SeparatedDataHandler(tracks_path,nTPCclusters)
-        self.y = read_MC_tracks(mc_path)
+        self.Y = SeparatedDataHandler(mov_path,nTPCclusters)
+        self.y = self.Y['xamP']
 
         if tpcNorm:
             self.X['xyz'] = (self.X['xyz'] + 260)/(260+260)
@@ -235,7 +236,7 @@ class TPCClusterDatasetConvolutional(Dataset):
 
 
 
-        y = self.y[idx,...]
+        y = self.y[idx,2:]
 
 
 

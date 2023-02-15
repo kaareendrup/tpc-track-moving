@@ -30,7 +30,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
     config = DotMap(yaml.safe_load(open(dp['config1'])))
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-    dataset = TPCClusterDatasetConvolutional(files[0],files[3],
+    dataset = TPCClusterDatasetConvolutional(files[0],files[2],
                                             transform=config.DATA_PARAMS.NORMALIZE,
                                             nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS)
 

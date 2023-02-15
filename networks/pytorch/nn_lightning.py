@@ -6,7 +6,7 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from networks.pytorch.nn_utils import FcNet,DeepConvSimpleNet
+from networks.pytorch.nn_networks import FcNet,DeepConvSimpleNet
 
 
 class LitClusterNet(pl.LightningModule):

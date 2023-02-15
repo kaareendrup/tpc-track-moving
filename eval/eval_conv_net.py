@@ -5,7 +5,7 @@ from torch import nn
 import numpy as np
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
-from tpcutils.data import TPCClusterDatasetConvolutional,SeparatedDataHandler
+from tpcutils.data import TPCClusterDatasetConvolutional,SeparatedDataHandler,read_MC_tracks
 
 import glob
 import yaml
@@ -30,11 +30,11 @@ def main(select = 'iterationConv1'):
     for f in files:
         print(f.split('/')[-1])
 
-    dataset = TPCClusterDatasetConvolutional(files[0],files[3],
+    dataset = TPCClusterDatasetConvolutional(files[0],files[2],
                                             transform=config.DATA_PARAMS.NORMALIZE,
                                             nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS)
 
-    movData = SeparatedDataHandler(files[2])['xamP']
+    movData = read_MC_tracks(files[3])[:,2:]
 
 
     target = []
@@ -54,11 +54,11 @@ def main(select = 'iterationConv1'):
     target = np.array(target)
     preds = np.array(preds)
 
-    f,ax = plt.subplots(2,7,figsize=(22,4))
+    f,ax = plt.subplots(2,5,figsize=(22,4))
     #ax = ax.flatten()
 
-    names = ["X",r"$\alpha$","Y","Z",r"$\mathrm{sin}(\phi)$",r"$\mathrm{tan}(\lambda)$",r"$q/p_\mathrm{T}$"]
-    for i in range(7):
+    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\mathrm{tan}(\lambda)$",r"$q/p_\mathrm{T}$"]
+    for i in range(5):
         ax[0][i].hist2d(target[:,i],preds[:,i],bins=50)
         ax[0][i].set(xlabel='Target', ylabel='Pred')
         ax[0][i].set_title(names[i])

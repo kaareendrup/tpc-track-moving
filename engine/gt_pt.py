@@ -31,7 +31,7 @@ def generalised_trainer_PT_clusters(**kwargs):
     config = DotMap(yaml.safe_load(open(dp['config1'])))
 
     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-    dataset = TPCClusterDataset(files[0],files[3],transform=config.DATA_PARAMS.NORMALIZE)
+    dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
 
     dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
