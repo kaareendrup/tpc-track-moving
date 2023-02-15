@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from config.paths import dpaths as dp
 from dotmap import DotMap
 
-def main(select = 'iterationConv1'):
+def main(select = 'iterationConv2'):
 
     config_sel = dp['model_path'] + '/' + select + '/' + 'hyperparams.yml'
     config = DotMap(yaml.safe_load(open(config_sel)))
