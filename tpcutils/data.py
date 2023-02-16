@@ -159,7 +159,7 @@ def SeparatedDataHandler(path,nTPCclusters=20):
 def getAllData(tracks_path,mov_path, test_size=0.25, random_state=42):
 
     X = DataHandler(tracks_path)
-    y = SeparatedDataHandler(mov_path)
+    y = SeparatedDataHandler(mov_path)['xamP'][:,2:]
 
     X_scaled = copy.deepcopy(X)
     y_scaled = copy.deepcopy(y)
