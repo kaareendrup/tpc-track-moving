@@ -6,6 +6,7 @@ import numpy as np
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
 from tpcutils.data import TPCClusterDatasetConvolutional,SeparatedDataHandler,read_MC_tracks
+from sklearn.model_selection import train_test_split
 
 import glob
 import yaml
@@ -15,13 +16,15 @@ from matplotlib import pyplot as plt
 from config.paths import dpaths as dp
 from dotmap import DotMap
 
-def main(select = 'iterationConv2'):
+import argparse
 
-    config_sel = dp['model_path'] + '/' + select + '/' + 'hyperparams.yml'
+def main(args):
+
+    config_sel = dp['model_path'] + '/' + args.select + '/' + 'hyperparams.yml'
     config = DotMap(yaml.safe_load(open(config_sel)))
 
 
-    Net = LitClusterConvolutionalNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + select + '/' + '*.ckpt')[0])
+    Net = LitClusterConvolutionalNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
     Net.eval()
 
 
@@ -34,13 +37,27 @@ def main(select = 'iterationConv2'):
                                             transform=config.DATA_PARAMS.NORMALIZE,
                                             nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS)
 
-    movData = read_MC_tracks(files[3])[:,2:]
+    dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
+    print("Valid data",len(dataset_valid))
+
+    mcData = read_MC_tracks(files[3])[:,2:]
+
+
+
+    total_target = []
+    for i in range(dataset.__len__()):
+        tar = dataset.__getitem__(i)
+        total_target.append(tar['target'].detach().numpy())
+    total_target = np.array(total_target)
+
+    print("Monte carlo data shape: {}".format(mcData.shape))
+    print("Total target data shape: {}".format(total_target.shape))
 
     target = []
     preds = []
-    for i in range(dataset.__len__()):
-        tar = dataset.__getitem__(i)
+    for i in range(dataset_valid.__len__()):
+        tar = dataset_valid.__getitem__(i)
         xyz = tar['input_xyz_row']
         mP = tar['mP']
         target.append(tar['target'].detach().numpy())
@@ -54,6 +71,9 @@ def main(select = 'iterationConv2'):
     target = np.array(target)
     preds = np.array(preds)
 
+    print("Valid target data shape: {}".format(target.shape))
+    print("Prediction valid data shape: {}".format(preds.shape))
+
     f,ax = plt.subplots(2,5,figsize=(22,4))
     #ax = ax.flatten()
 
@@ -65,7 +85,7 @@ def main(select = 'iterationConv2'):
 
         ax[0][i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
-        ax[1][i].hist2d(target[:,i],movData[:,i],bins=50)
+        ax[1][i].hist2d(total_target[:,i],mcData[:,i],bins=50)
         ax[1][i].set(xlabel='Target', ylabel='MovTrackRef')
         ax[1][i].set_title(names[i])
 
@@ -82,33 +102,23 @@ def main(select = 'iterationConv2'):
 
 
 
-
-
-
-
-
-
-
-
     return 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 if __name__=='__main__':
 
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--select",
+                        default="iterationConv2",
+                        required=True,
+                        help="model directory, in config file known as param MODEL_DIR"
+                        )
+
+
+
+    args = parser.parse_args()
+
+    main(args)
