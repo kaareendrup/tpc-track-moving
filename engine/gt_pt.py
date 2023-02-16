@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.data import TPCClusterDataset
+from tpcutils.dataset_pt import TPCClusterDataset
 
 from networks.pytorch.nn_lightning import FcNet,LitClusterNet
 from matplotlib import pyplot as plt

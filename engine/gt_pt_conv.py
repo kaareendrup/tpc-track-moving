@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.data import TPCClusterDatasetConvolutional
+from tpcutils.dataset_pt import TPCClusterDatasetConvolutional
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
 from matplotlib import pyplot as plt

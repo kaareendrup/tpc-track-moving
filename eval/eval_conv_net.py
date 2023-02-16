@@ -74,20 +74,20 @@ def main(args):
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
 
-    f,ax = plt.subplots(2,5,figsize=(22,4))
+    f,ax = plt.subplots(2,5,figsize=(16,4))
     #ax = ax.flatten()
 
     names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\mathrm{tan}(\lambda)$",r"$q/p_\mathrm{T}$"]
     for i in range(5):
-        ax[0][i].hist2d(target[:,i],preds[:,i],bins=50)
-        ax[0][i].set(xlabel='Target', ylabel='Pred')
-        ax[0][i].set_title(names[i])
+        ax[0][i].hist2d(preds[:,i],target[:,i],bins=50)
+        ax[0][i].set(ylabel='MovTrackRefit', xlabel='NN Prediction')
+        ax[0][i].set_title("{}".format(names[i]))
 
         ax[0][i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
-        ax[1][i].hist2d(total_target[:,i],mcData[:,i],bins=50)
-        ax[1][i].set(xlabel='Target', ylabel='MovTrackRef')
-        ax[1][i].set_title(names[i])
+        ax[1][i].hist2d(mcData[:,i],total_target[:,i],bins=50)
+        ax[1][i].set(ylabel='IniTrackRefit', xlabel='MCTrack')
+        ax[1][i].set_title("{}".format(names[i]))
 
         ax[1][i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
@@ -97,7 +97,7 @@ def main(args):
 
     plt.show()
 
-    f.savefig("pred.png",bbox_inches='tight')
+    # f.savefig("pred.png",bbox_inches='tight')
 
 
 
