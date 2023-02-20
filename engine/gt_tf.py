@@ -10,7 +10,7 @@ from sklearn.metrics import roc_curve, auc
 import glob
 
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, TerminateOnNaN
+from tensorflow.keras.callbacks import EarlyStopping, TerminateOnNaN, ModelCheckpoint
 
 import yaml
 import io
@@ -32,8 +32,8 @@ def generalised_trainer_PT_clusters(**kwargs):
     #input shape: 7+nClustersSelected*3
     model = get_tfMLP_model(X_train.shape[1], config)
 
-    LRScheduler = LinearScheduler(config.HYPER_PARAMS.MAX_EPOCHS)
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR, histogram_freq=1)
+    LRScheduler = LinearScheduler(config.HYPER_PARAMS.MAX_EPOCHS, config.HYPER_PARAMS.LEARNING_RATE)
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/log', histogram_freq=1)
 
     history = model.fit(X_train, y_train, epochs=config.HYPER_PARAMS.MAX_EPOCHS, batch_size=config.HYPER_PARAMS.BATCH_SIZE, verbose = 2,
                     validation_data=(X_val, y_val),
@@ -41,10 +41,17 @@ def generalised_trainer_PT_clusters(**kwargs):
                         EarlyStopping(monitor='val_loss', patience=15, verbose=1),
                         LRScheduler,
                         TerminateOnNaN(),
-                        tensorboard_callback
+                        tensorboard_callback,
+                        # ModelCheckpoint(
+                        #     config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR,
+                        #     verbose=0,
+                        #     monitor = 'val_loss',
+                        #     mode = 'min',
+                        # )
                     ])
 
     # predict_val = model.predict(X_val)
+    model.save(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
 
     with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:
         yaml.dump(config.toDict(),outfile)
