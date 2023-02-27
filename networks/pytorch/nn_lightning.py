@@ -6,7 +6,9 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from networks.pytorch.nn_networks import FcNet,DeepConvSimpleNet
+from networks.pytorch.nn_networks import FcNet,DeepConvSimpleNet, PseudoGraph
+from tpcutils.training_pt import PiecewiseLinearLR, LogCoshLoss, VonMisesFisher2DLoss
+from torch.optim import Adam
 
 
 class LitClusterNet(pl.LightningModule):
@@ -114,4 +116,76 @@ class LitClusterConvolutionalNet(pl.LightningModule):
 
         loss = F.mse_loss(logits, y)
 
+        self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
+
+
+class PseudoGraphNet(pl.LightningModule):
+    def __init__(self,input_shape,config,training_dataloader,**kwargs):
+        super().__init__()
+
+        # Add 1 to output shape to predict kappa for vMF loss
+        self.net = PseudoGraph(input_shape,config.MODEL.OUTPUT_SHAPE+1)
+
+        self.save_hyperparameters()
+
+        self._optimizer_class=Adam
+        self._optimizer_kwargs={'lr': config.HYPER_PARAMS.LEARNING_RATE, 'eps': config.HYPER_PARAMS.LEARNING_RATE_EPS}
+
+        self._scheduler_class=PiecewiseLinearLR
+        self._scheduler_kwargs={
+            'milestones': [0, len(training_dataloader) / 2, len(training_dataloader) * config.HYPER_PARAMS.MAX_EPOCHS],
+            'factors': [1e-2, 1, 1e-02]
+        }
+        self._scheduler_config={
+            'interval': 'step',
+        }
+
+        self._loss1 = LogCoshLoss()
+        self._loss2 = VonMisesFisher2DLoss()
+
+    def forward(self, x):
+        return self.net(x)
+
+    def configure_optimizers(self):
+        optimizer = self._optimizer_class(
+            self.parameters(), **self._optimizer_kwargs
+        )
+        config = {
+            "optimizer": optimizer,
+        }
+        if self._scheduler_class is not None:
+            scheduler = self._scheduler_class(
+                optimizer, **self._scheduler_kwargs
+            )
+            config.update(
+                {
+                    "lr_scheduler": {
+                        "scheduler": scheduler,
+                        **self._scheduler_config,
+                    },
+                }
+            )
+        return config
+
+    def training_step(self, train_batch, batch_idx):
+        x, y = train_batch
+        logits = self.forward(x)
+
+        # Custom loss step
+        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,3:5]), dim=1) , torch.cat((y[:,:2],y[:,3:]), dim=1) )
+        angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,5].unsqueeze(1)), dim=1), y[:,2].unsqueeze(1) )
+
+        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+        self.log('train_loss', loss,on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+
+    def validation_step(self, val_batch, batch_idx):
+        x, y = val_batch
+        logits = self.forward(x)
+
+        # Custom loss step
+        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,3:5]), dim=1) , torch.cat((y[:,:2],y[:,3:]), dim=1) )
+        angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,5].unsqueeze(1)), dim=1), y[:,2].unsqueeze(1) )
+
+        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)

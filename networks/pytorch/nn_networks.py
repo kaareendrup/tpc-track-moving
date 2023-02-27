@@ -124,3 +124,37 @@ class DeepConvSimpleNet(nn.Module):
         xmP = self.fc12(xmP)
 
         return x_out1+xmP
+
+
+class PseudoGraph(nn.Module):
+
+    def __init__(self,input_shape=87,output_shape=5):
+        super(PseudoGraph,self).__init__()
+
+        in_shape_2D = input_shape - 60 + 3
+
+        self.fc1 = nn.Linear(in_shape_2D, 50)
+        self.fc2 = nn.Linear(50, 50)
+        self.fc3 = nn.Linear(50, 50)
+        self.fc4 = nn.Linear(20*50, output_shape)
+
+    def forward(self, x):
+
+        x_graph = x[:,-60:]
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0],-1,3))
+
+        x_vec = x[:,:-60]
+        x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
+
+        x = torch.cat([x_graph, x_repeat], dim=2)
+
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+
+        x = nn.Flatten()(x)
+
+        x = self.fc4(x)
+
+        return x
+    
