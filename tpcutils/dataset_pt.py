@@ -14,7 +14,7 @@ class TPCClusterDataset(Dataset):
     def __init__(self, tracks_path, mov_path, transform=False):
 
         self.X = DataHandler(tracks_path)
-        self.y = DataHandler(mov_path)
+        self.y = SeparatedDataHandler(mov_path)['xamP'][:,2:]
 
 
         self.transform = transform
