@@ -43,34 +43,62 @@ def GetData(path, test_size=0.25, random_state=42):
     return df, train, test, X, y, X_test, y_test, X_scaled, y_scaled, X_test_scaled, y_test_scaled
 
 
-def read_nonMC_tracks(data_path):
+def read_nonMC_tracks(data_path,np_data=True):
     data_names = ["X","alpha","Y","Z","sin_phi","tgLambda","q2pt","bcTB","dz","cov1","cov2","cov3","cov4","cov5","cov6","cov7","cov8",
                  "cov9","cov10","cov11","cov12","cov13","cov14","cov15"]
     nClusters=159
 
-    Track = pd.read_csv(data_path,header=None,sep=' ',index_col=0)#names=data_names)
-    cluster_xyz_data=Track.iloc[:,len(data_names)+nClusters*2:-1]
+    if np_data:
+        Track = np.load(data_path)
 
-    sector_data = Track.iloc[:,len(data_names):len(data_names)+nClusters]
+        cluster_xyz_data=Track[:,len(data_names)+nClusters*2:]
 
-    row_data = Track.iloc[:,len(data_names)+nClusters:len(data_names)+nClusters*2]
+        sector_data = Track[:,len(data_names):len(data_names)+nClusters]
 
-    mP_vector_data = Track.iloc[:,0:len(data_names)-(15+2)]
+        row_data = Track[:,len(data_names)+nClusters:len(data_names)+nClusters*2]
+
+        mP_vector_data = Track[:,0:len(data_names)-(15+2)]
+
+    else:
+        Track = pd.read_csv(data_path,header=None,sep=' ',index_col=0)#names=data_names)
+
+        cluster_xyz_data=Track.iloc[:,len(data_names)+nClusters*2:-1]
+
+        sector_data = Track.iloc[:,len(data_names):len(data_names)+nClusters]
+
+        row_data = Track.iloc[:,len(data_names)+nClusters:len(data_names)+nClusters*2]
+
+        mP_vector_data = Track.iloc[:,0:len(data_names)-(15+2)]
 
     return cluster_xyz_data, sector_data, row_data, mP_vector_data
 
 
-def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack):
+def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack,np_data=True):
 
-    xyz = xyz_data.iloc[[iTrack]].to_numpy()
+    if not np_data:
+        xyz = xyz_data.iloc[[iTrack]].to_numpy()
+        #print(iTrack)
+    else:
+        xyz = xyz_data[iTrack]
+
     xyz = np.reshape(xyz, (3,-1), order='F')
 
+
     cut = np.where(xyz==0)[1][0]
+
     xyz = xyz[:,:cut]
 
     # Correct for sector
-    sector = sector_data.iloc[[iTrack]].to_numpy()
-    sector = sector[0,:cut]
+    if not np_data:
+        sector = sector_data.iloc[[iTrack]].to_numpy()
+    else:
+        sector = sector_data[iTrack]
+
+
+    if not np_data:
+        sector = sector[0,:cut]
+    else:
+        sector = sector[:cut]
     sector_corr = - sector * 20/360*2*np.pi
 
     x_new = xyz[0] * np.cos(sector_corr) + xyz[1] * np.sin(sector_corr)
@@ -78,18 +106,25 @@ def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack):
 
     return x_new,y_new, xyz[2]
 
-def GetClusterData(data,i=0,nTPCclusters=20):
+def GetClusterData(data,i=0,nTPCclusters=20,np_data=True):
 
     clusters_xyz, sectors, pad_rows, XmP = data
 
-    x_new,y_new,z_new = get_clusters_xyz_lab_coord(clusters_xyz,sectors,i)
+
+    x_new,y_new,z_new = get_clusters_xyz_lab_coord(clusters_xyz,sectors,i,np_data)
 
     idx = np.round(np.linspace(0, len(x_new) - 1, nTPCclusters)).astype(int)
 
-    pads = pad_rows.iloc[[i]].to_numpy().squeeze()
+    if np_data:
+        pads = pad_rows[i]
+
+        return XmP[i], x_new[idx], y_new[idx], z_new[idx], pads[idx]
+    else:
+
+        pads = pad_rows.iloc[[i]].to_numpy().squeeze()
 
 
-    return XmP.iloc[[i]].to_numpy().squeeze(), x_new[idx], y_new[idx], z_new[idx], pads[idx]
+        return XmP.iloc[[i]].to_numpy().squeeze(), x_new[idx], y_new[idx], z_new[idx], pads[idx]
 
 def read_MC_tracks(data_path):
 
@@ -104,10 +139,9 @@ def read_MC_tracks(data_path):
 
     return tracks
 
-def DataHandler(path,nTPCclusters=20):
+def DataHandler(path,nTPCclusters=20,np_data=True):
 
-    data = read_nonMC_tracks(path)
-
+    data = read_nonMC_tracks(path,np_data)
 
 
     iTracks = data[0].shape[0]
@@ -122,11 +156,11 @@ def DataHandler(path,nTPCclusters=20):
 
     return np.array(X)
 
-def SeparatedDataHandler(path,nTPCclusters=20):
+def SeparatedDataHandler(path,nTPCclusters=20,np_data=True):
     """
         Data handler for generating xmp vector, 3xN cluster vector plus 1xN row vector
     """
-    data = read_nonMC_tracks(path)
+    data = read_nonMC_tracks(path,np_data)
 
     iTracks = data[0].shape[0]
     fXAmP = []
@@ -134,8 +168,9 @@ def SeparatedDataHandler(path,nTPCclusters=20):
     fy = []
     fz = []
     fpads = []
+
     for track in range(iTracks):
-        XAmP, x,y,z, pad_rows = GetClusterData(data,track,nTPCclusters)
+        XAmP, x,y,z, pad_rows = GetClusterData(data,track,nTPCclusters,np_data)
 
         fXAmP.append(XAmP)
         fx.append(x)
@@ -150,7 +185,7 @@ def SeparatedDataHandler(path,nTPCclusters=20):
 
     data_dict = {}
     data_dict['xamP'] = np.array(fXAmP)
-    data_dict['xyz'] = np.array([fx,fy,fz]).transpose(1,0,2)
+    data_dict['xyz'] = np.array([fx,fy,fz]).transpose(1,0,2) # pd 1 0 2
     data_dict['pads'] = np.array(fpads)
 
     return data_dict
