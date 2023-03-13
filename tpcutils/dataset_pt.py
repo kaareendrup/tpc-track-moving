@@ -11,10 +11,10 @@ from tpcutils.data import DataHandler,SeparatedDataHandler
 #### PYTORCH
 
 class TPCClusterDataset(Dataset):
-    def __init__(self, tracks_path, mov_path, transform=False):
+    def __init__(self, tracks_path, mov_path, transform=False,np_data=True):
 
-        self.X = DataHandler(tracks_path)
-        self.y = SeparatedDataHandler(mov_path)['xamP'][:,2:]
+        self.X = DataHandler(tracks_path,np_data)
+        self.y = SeparatedDataHandler(mov_path,np_data)['xamP'][:,2:]
 
 
         self.transform = transform
@@ -45,14 +45,15 @@ class TPCClusterDataset(Dataset):
         return self.X[2,:].shape[0]
 
 class TPCClusterDatasetConvolutional(Dataset):
-    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=True):
+    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=True,np_data=True):
 
-        self.X = SeparatedDataHandler(tracks_path,nTPCclusters)
-        self.Y = SeparatedDataHandler(mov_path,nTPCclusters)
+        self.X = SeparatedDataHandler(tracks_path,nTPCclusters,np_data)
+        self.Y = SeparatedDataHandler(mov_path,nTPCclusters,np_data)
         self.y = self.Y['xamP']
 
         if tpcNorm:
             self.X['xyz'] = (self.X['xyz'] + 260)/(260+260)
+
 
         self.x = np.column_stack((self.X['xyz'],self.X['pads'][:,np.newaxis,:]))
 
