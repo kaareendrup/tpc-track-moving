@@ -67,7 +67,7 @@ class LitClusterConvolutionalNet(pl.LightningModule):
 
         filter = config.MODEL.FILTER
 
-        self.net = DeepConvSimpleNet(1,config.MODEL.OUTPUT_SHAPE,filter,config.HYPER_PARAMS.BATCH_SIZE)
+        self.net = DeepConvSimpleNet(1,config.MODEL.OUTPUT_SHAPE,filter)
 
         self.LEARNING_RATE = config.HYPER_PARAMS.LEARNING_RATE
 
