@@ -126,15 +126,21 @@ def GetClusterData(data,i=0,nTPCclusters=20,np_data=True):
 
         return XmP.iloc[[i]].to_numpy().squeeze(), x_new[idx], y_new[idx], z_new[idx], pads[idx]
 
-def read_MC_tracks(data_path):
+def read_MC_tracks(data_path,np_data=True):
 
     data_names = ["X","alpha","Y","Z","sin_phi","tgLambda","q2pt","bcTB","dz","cov1","cov2","cov3","cov4","cov5","cov6","cov7","cov8",
                  "cov9","cov10","cov11","cov12","cov13","cov14","cov15"]
 
-    tracks = pd.read_csv(data_path,header=None,sep=' ',index_col=0)#names=data_names)
-    tracks = tracks.to_numpy()[:,:-1]
+    if np_data:
+        np.load(data_path)
 
-    tracks = tracks[:,0:len(data_names)-(15+2)]
+        tracks = tracks[:,0:len(data_names)-(15+2)]
+
+    else:
+        tracks = pd.read_csv(data_path,header=None,sep=' ',index_col=0)#names=data_names)
+        tracks = tracks.to_numpy()[:,:-1]
+
+        tracks = tracks[:,0:len(data_names)-(15+2)]
 
 
     return tracks

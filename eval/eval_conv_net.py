@@ -5,7 +5,8 @@ from torch import nn
 import numpy as np
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
-from tpcutils.data import TPCClusterDatasetConvolutional,SeparatedDataHandler,read_MC_tracks
+from tpcutils.dataset_pt import TPCClusterDatasetConvolutional
+from tpcutils.data import SeparatedDataHandler,read_MC_tracks
 from sklearn.model_selection import train_test_split
 
 import glob
@@ -27,23 +28,33 @@ def main(args):
     Net = LitClusterConvolutionalNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
     Net.eval()
 
+    print("#"*15)
+    print("Model successfully loaded...")
 
+    iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
+    MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
 
-    files = glob.glob(dp['data_path'] + '/*.txt')
-    for f in files:
-        print(f.split('/')[-1])
-
-    dataset = TPCClusterDatasetConvolutional(files[0],files[2],
+    dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
                                             transform=config.DATA_PARAMS.NORMALIZE,
-                                            nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS)
+                                            nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
+                                            np_data=config.DATA_PARAMS.NUMPY_DATA)
+    # legacy data
+    # files = glob.glob(dp['data_path'] + '/*.txt')
+    # for f in files:
+    #     print(f.split('/')[-1])
+    #
+    # dataset = TPCClusterDatasetConvolutional(files[0],files[2],
+    #                                         transform=config.DATA_PARAMS.NORMALIZE,
+    #                                         nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS)
 
     dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
     print("Valid data",len(dataset_valid))
 
-    mcData = read_MC_tracks(files[3])[:,2:]
-
-
+    #mcData = read_MC_tracks(files[3])[:,2:]
+    mcData_file = config.PATHS.DATA_PATH + '/mcTrack.npy'
+    mcData = read_MC_tracks(mcData_file)[:,2:]
+    print(mcData.shape)
 
     total_target = []
     for i in range(dataset.__len__()):
