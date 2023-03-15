@@ -54,7 +54,7 @@ def main(args):
     #mcData = read_MC_tracks(files[3])[:,2:]
     mcData_file = config.PATHS.DATA_PATH + '/mcTrack.npy'
     mcData = read_MC_tracks(mcData_file)[:,2:]
-    print(mcData.shape)
+    print("mcData shape:",mcData.shape)
 
     total_target = []
     for i in range(dataset.__len__()):
@@ -73,6 +73,8 @@ def main(args):
         mP = tar['mP']
         target.append(tar['target'].detach().numpy())
 
+        print("tar shape",tar.shape)
+        print("mp shape",mP.shape)
         with torch.no_grad():
             yhat = Net(xyz,mP)
 
