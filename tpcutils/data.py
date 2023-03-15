@@ -132,7 +132,7 @@ def read_MC_tracks(data_path,np_data=True):
                  "cov9","cov10","cov11","cov12","cov13","cov14","cov15"]
 
     if np_data:
-        np.load(data_path)
+        tracks = np.load(data_path)
 
         tracks = tracks[:,0:len(data_names)-(15+2)]
 

@@ -54,7 +54,7 @@ def main(args):
     #mcData = read_MC_tracks(files[3])[:,2:]
     mcData_file = config.PATHS.DATA_PATH + '/mcTrack.npy'
     mcData = read_MC_tracks(mcData_file)[:,2:]
-    print(mcData.shape)
+    print("mcData shape:",mcData.shape)
 
     total_target = []
     for i in range(dataset.__len__()):
@@ -72,6 +72,8 @@ def main(args):
         xyz = tar['input_xyz_row']
         mP = tar['mP']
         target.append(tar['target'].detach().numpy())
+        xyz = xyz.unsqueeze(0)
+        mP = mP.unsqueeze(0)
 
         with torch.no_grad():
             yhat = Net(xyz,mP)
@@ -80,7 +82,7 @@ def main(args):
         preds.append(yhat.detach().numpy())
 
     target = np.array(target)
-    preds = np.array(preds)
+    preds = np.array(preds).squeeze()
 
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
