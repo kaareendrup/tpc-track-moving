@@ -72,9 +72,9 @@ def main(args):
         xyz = tar['input_xyz_row']
         mP = tar['mP']
         target.append(tar['target'].detach().numpy())
+        xyz = xyz.unsqueeze(0)
+        mP = mP.unsqueeze(0)
 
-        print("tar shape",tar.shape)
-        print("mp shape",mP.shape)
         with torch.no_grad():
             yhat = Net(xyz,mP)
 
@@ -82,7 +82,7 @@ def main(args):
         preds.append(yhat.detach().numpy())
 
     target = np.array(target)
-    preds = np.array(preds)
+    preds = np.array(preds).squeeze()
 
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
