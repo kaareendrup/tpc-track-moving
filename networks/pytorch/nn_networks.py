@@ -112,7 +112,7 @@ class DeepConvSimpleNet(nn.Module):
         self.conv1 = EncodeLayer(self.in_channels,self.filter)
         self.fc = nn.Linear(self.filter*2, self.out_channels)
 
-        self.fc11 = nn.Linear(5, 16)
+        self.fc11 = nn.Linear(7, 16)
         self.fc12 = nn.Linear(16, out_channels)
 
 
