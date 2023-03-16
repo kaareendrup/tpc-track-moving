@@ -45,7 +45,7 @@ class TPCClusterDataset(Dataset):
         return self.X[2,:].shape[0]
 
 class TPCClusterDatasetConvolutional(Dataset):
-    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=True,np_data=True):
+    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=False,np_data=True):
 
         self.X = SeparatedDataHandler(tracks_path,nTPCclusters,np_data)
         self.Y = SeparatedDataHandler(mov_path,nTPCclusters,np_data)
@@ -55,7 +55,10 @@ class TPCClusterDatasetConvolutional(Dataset):
             self.X['xyz'] = (self.X['xyz'] + 260)/(260+260)
 
 
-        self.x = np.column_stack((self.X['xyz'],self.X['pads'][:,np.newaxis,:]))
+        self._TPCDistortions = self.X['xyz'] - self.Y['xyz']
+        self._PADDists = self.X['pads']
+
+        self.x = np.column_stack((self._TPCDistortions,self._PADDists[:,np.newaxis,:]))
 
         self.transform = transform
 
