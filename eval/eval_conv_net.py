@@ -90,7 +90,7 @@ def main(args):
     f,ax = plt.subplots(2,5,figsize=(16,4))
     #ax = ax.flatten()
 
-    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\mathrm{tan}(\lambda)$",r"$q/p_\mathrm{T}$"]
+    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda)$",r"$q/p_\mathrm{T}$"]
     for i in range(5):
         ax[0][i].hist2d(preds[:,i],target[:,i],bins=50)
         ax[0][i].set(ylabel='MovTrackRefit', xlabel='NN Prediction')
