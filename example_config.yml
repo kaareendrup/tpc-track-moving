@@ -1,0 +1,51 @@
+HYPER_PARAMS:
+  MAX_EPOCHS: !!int 1
+  LEARNING_RATE: !!float 1e-3
+  BATCH_SIZE: !!int 2
+  SWA_LRS: !!float 1e-2
+  LR_SCHEDULER_PATIENCE: !!int 5
+  LR_SCHEDULER_FACTOR_: !!float 0.5
+
+  EARLY_STOPPING:
+    PATIENCE: !!int 50
+
+DATA_PARAMS:
+  TEST_SIZE: !!float 0.25
+  RANDOM_STATE: !!int 42
+  NORMALIZE: False
+  SHUFFLE_TRAIN: True
+  SHUFFLE_VALID: False
+  NUM_WORKERS: !!int 4
+  NUMPY_DATA: True
+  TPC_SETTINGS:
+    TPC_CLUSTERS: !!int 10
+    SPLIT_FRACTION:
+      - !!float 0.4
+      - !!float 0.2
+      - !!float 0.4
+    EDGE_ITER: !!int 0 # spacing at edges - ++i will double the spacing for each iteration
+    MIDDLE_ITER: !!int 0 # spacing in the middle
+    PLOT_SPACING: False # Turn this flag on if you want to plot cluster spacing
+
+
+PYTORCH_LIGHTNING_PARAMS:
+  NUM_NODES: !!int 1
+  PRECISION: !!int 16
+  LIMIT_TRAIN_BATCHES: !!float 0.5
+  ACCELERATOR: 'cpu'
+  DEVICES: 1
+
+PATHS:
+  #DATA_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/data_files/numpy_data'
+  DATA_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/data_files/pp_100e_2802/numpy_data_test_size'
+  SAVE_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/pytorch'
+  MODEL_DIR: 'tpc_clusters'
+
+MODEL:
+  NAME: 'FConvNet'
+  OUTPUT_SHAPE: !!int 5
+  FILTER: !!int 32
+
+temp:
+  - temp1: 1
+  - temp2: 2

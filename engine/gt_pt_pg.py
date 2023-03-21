@@ -39,7 +39,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
         dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
                                                 transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
+                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
     else:
         print("I'm using txt data")
@@ -47,7 +47,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
         dataset = TPCClusterDatasetConvolutional(files[0],files[2],
                                                 transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
+                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
 
 

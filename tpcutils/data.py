@@ -106,14 +106,67 @@ def get_clusters_xyz_lab_coord(xyz_data,sector_data,iTrack,np_data=True):
 
     return x_new,y_new, xyz[2]
 
-def GetClusterData(data,i=0,nTPCclusters=20,np_data=True):
+def cluster_iter(quarter1,quarter2,start,end,iter=1):
+    for i in range(iter):
+        quarter1 = (quarter1 + start)//2
+        quarter2 = (quarter2 + end)//2
+    return quarter1,quarter2
+def select_tpc_clusters_idx(TPC_settings,cluster_length=159-1,):
+    nTPCclusters = TPC_settings.TPC_CLUSTERS
+    split_fraction = TPC_settings.SPLIT_FRACTION
+    edge_iter = TPC_settings.EDGE_ITER
+    mid_iter = TPC_settings.MIDDLE_ITER
+
+    if cluster_length<=nTPCclusters:
+        return np.round(np.linspace(0, cluster_length, nTPCclusters)).astype(int) # for evenly spaced clusters
+
+    start, mid, end = np.round(np.linspace(0,cluster_length,3)).astype(int)
+
+    first_q = (mid+start)//2
+    last_q = (mid+end)//2
+
+    if edge_iter>0:
+        first_q,last_q = cluster_iter(first_q,last_q,start,end,edge_iter)
+
+    assert sum(split_fraction) == 1, 'you can not exceed your number of tpc clusters'
+
+    first_idxs = np.round(np.linspace(start,first_q,int(split_fraction[0]*nTPCclusters))).astype(int)
+    end_idxs = np.round(np.linspace(last_q,end,int(split_fraction[2]*nTPCclusters))).astype(int)
+
+    # mid one I require a fixed middle idx
+    mid_f_start = (first_q+mid)//2
+    mid_f_end = (last_q+mid)//2
+    if mid_iter>0:
+        mid_f_start,mid_f_end = cluster_iter(mid_f_start,mid_f_end,mid,mid,mid_iter)
+    mid_idxs = np.round(np.linspace(mid_f_start,mid_f_end,int(split_fraction[1]*nTPCclusters))).astype(int)
+
+    idx = np.concatenate([first_idxs,mid_idxs,end_idxs])
+
+    if TPC_settings.PLOT_SPACING:
+        f,ax = plt.subplots(1,1,figsize=(6,4))
+        hist = ax.hist(idx,bins=cluster_length,histtype='step',color='black')
+        ax.set_title("TPC cluster selection")
+        plt.show()
+
+
+    s = pd.Series(idx)
+    dupl = s.duplicated()
+    assert dupl.any()!=True, "change your iter, you are selecting same clusters"
+
+    assert len(idx)==nTPCclusters, 'Change split_fraction or nTPCclusters so your output shape matches the number of tpc clusters you selected'
+    return idx
+
+def GetClusterData(data,i=0,TPC_settings={},np_data=True):
 
     clusters_xyz, sectors, pad_rows, XmP = data
 
 
     x_new,y_new,z_new = get_clusters_xyz_lab_coord(clusters_xyz,sectors,i,np_data)
 
-    idx = np.round(np.linspace(0, len(x_new) - 1, nTPCclusters)).astype(int)
+    # idx = np.round(np.linspace(0, len(x_new) - 1, nTPCclusters)).astype(int) # for evenly spaced clusters
+    idx = select_tpc_clusters_idx(TPC_settings=TPC_settings,
+                                  cluster_length = len(x_new)-1)
+
 
     if np_data:
         pads = pad_rows[i]
@@ -145,7 +198,7 @@ def read_MC_tracks(data_path,np_data=True):
 
     return tracks
 
-def DataHandler(path,nTPCclusters=20,np_data=True):
+def DataHandler(path,TPC_settings={},np_data=True):
 
     data = read_nonMC_tracks(path,np_data)
 
@@ -154,7 +207,7 @@ def DataHandler(path,nTPCclusters=20,np_data=True):
 
     X = []
     for track in range(iTracks):
-        temp = GetClusterData(data,track,nTPCclusters)
+        temp = GetClusterData(data,track,TPC_settings)
 
         temp2 = np.concatenate([*temp])
 
@@ -162,7 +215,7 @@ def DataHandler(path,nTPCclusters=20,np_data=True):
 
     return np.array(X)
 
-def SeparatedDataHandler(path,nTPCclusters=20,np_data=True):
+def SeparatedDataHandler(path,TPC_settings,np_data=True):
     """
         Data handler for generating xmp vector, 3xN cluster vector plus 1xN row vector
     """
@@ -176,7 +229,7 @@ def SeparatedDataHandler(path,nTPCclusters=20,np_data=True):
     fpads = []
 
     for track in range(iTracks):
-        XAmP, x,y,z, pad_rows = GetClusterData(data,track,nTPCclusters,np_data)
+        XAmP, x,y,z, pad_rows = GetClusterData(data,track,TPC_settings,np_data)
 
         fXAmP.append(XAmP)
         fx.append(x)

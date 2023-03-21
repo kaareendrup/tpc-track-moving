@@ -29,6 +29,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
     config = DotMap(yaml.safe_load(open(dp['config1'])))
 
+
     if config.DATA_PARAMS.NUMPY_DATA:
         print("I'm using NUMPY data")
         iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
@@ -36,7 +37,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
         dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
                                                 transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
+                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
     else:
         print("I'm using txt data")
@@ -44,7 +45,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
         dataset = TPCClusterDatasetConvolutional(files[0],files[2],
                                                 transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
+                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
 
 

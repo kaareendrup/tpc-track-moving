@@ -45,10 +45,12 @@ class TPCClusterDataset(Dataset):
         return self.X[2,:].shape[0]
 
 class TPCClusterDatasetConvolutional(Dataset):
-    def __init__(self, tracks_path, mov_path,nTPCclusters=20, transform=False,tpcNorm=False,np_data=True):
+    def __init__(self, tracks_path, mov_path,TPC_settings, transform=False,tpcNorm=False,np_data=True):
 
-        self.X = SeparatedDataHandler(tracks_path,nTPCclusters,np_data)
-        self.Y = SeparatedDataHandler(mov_path,nTPCclusters,np_data)
+
+
+        self.X = SeparatedDataHandler(tracks_path,TPC_settings,np_data)
+        self.Y = SeparatedDataHandler(mov_path,TPC_settings,np_data)
         self.y = self.Y['xamP']
 
         if tpcNorm:
