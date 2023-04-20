@@ -155,6 +155,7 @@ class PseudoGraph(nn.Module):
         x = nn.Flatten()(x)
 
         x = self.fc4(x)
+        x[:,2] = torch.tanh(x[:,2])
 
         return x
     

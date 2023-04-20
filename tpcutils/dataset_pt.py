@@ -27,8 +27,11 @@ class TPCClusterDataset(Dataset):
         y = self.y[idx,:]
 
         if self.transform:
-            x = self._transform(x)
-            y = self._transform(y)
+            # x = self._transform(x)
+            # y = self._transform(y)
+
+            x = self._transform_x(x)
+            y = self._transform_y(y)
 
         # x_tensor = torch.tensor(x,dtype=torch.float64)
         # y_tensor = torch.tensor(y,dtype=torch.float64)
@@ -40,6 +43,18 @@ class TPCClusterDataset(Dataset):
 
     def _transform(self,array):
         return (array - array.min())/(array.max()-array.min())
+
+    def _transform_x(self,array):
+
+        transform_array = np.zeros(len(array)) + 1/100
+        # transform_array[2:7] = np.array([1/10, 1/100, 10, 1, 1/10])
+        transform_array[2:7] = np.array([1/10, 1/100, 1e7, 1, 1/10])
+
+        return array #* transform_array
+
+    def _transform_y(self,array):
+        return array * np.array([1/10, 1/100, 100, 1, 1/10])
+        # return array * np.array([1/10, 1/100, 1e7, 1, 1/10])
 
     def _shape(self,):
         return self.X[2,:].shape[0]

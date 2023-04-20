@@ -189,3 +189,18 @@ class PseudoGraphNet(pl.LightningModule):
 
         loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
+
+    # def training_step(self, train_batch, batch_idx):
+    #     x, y = train_batch
+    #     logits = self.forward(x)[:,:5]
+
+    #     loss = self._loss1(logits, y).mean()
+    #     self.log('train_loss', loss,on_step=True, on_epoch=True, prog_bar=True, logger=True)
+    #     return loss
+
+    # def validation_step(self, val_batch, batch_idx):
+    #     x, y = val_batch
+    #     logits = self.forward(x)[:,:5]
+
+    #     loss = self._loss1(logits, y).mean()
+    #     self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
