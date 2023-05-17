@@ -32,6 +32,12 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
     #files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     #dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
+
+    if config.DATA_PARAMS.ROOT:
+        print("I'm using the correct tpc-trackStudy file in ROOT format")
+        file = ROOT.TFile.Open(config.PATHS.DATA_PATH)
+        dataset = TPCTreeCluster(file,transform=True,conf=config)
+        
     if config.DATA_PARAMS.NUMPY_DATA:
         print("I'm using NUMPY data")
         iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'

@@ -16,7 +16,8 @@ DATA_PARAMS:
   SHUFFLE_TRAIN: True
   SHUFFLE_VALID: False
   NUM_WORKERS: !!int 4
-  NUMPY_DATA: True
+  NUMPY_DATA: False
+  ROOT: True
   TPC_SETTINGS:
     TPC_CLUSTERS: !!int 10
     SPLIT_FRACTION:
@@ -36,10 +37,9 @@ PYTORCH_LIGHTNING_PARAMS:
   DEVICES: 1
 
 PATHS:
-  #DATA_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/data_files/numpy_data'
-  DATA_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/data_files/pp_100e_2802/numpy_data_test_size'
-  SAVE_PATH: '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/pytorch'
-  MODEL_DIR: 'tpc_clusters'
+  DATA_PATH: '~/data_folder/tpc-trackStudy.root'
+  SAVE_PATH: '~/models/pytorch'
+  MODEL_DIR: 'root_file'
 
 MODEL:
   NAME: 'FConvNet'

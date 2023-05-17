@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.dataset_pt import TPCClusterDatasetConvolutional
+from tpcutils.dataset_pt import TPCClusterDatasetConvolutional,TPCTreeCluster
 
 from networks.pytorch.nn_lightning import LitClusterConvolutionalNet
 from matplotlib import pyplot as plt
@@ -17,49 +17,60 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveraging
 from pytorch_lightning.loggers import TensorBoardLogger
 
+import ROOT
+
 import yaml
 import io
 from dotmap import DotMap
 
-from config.paths import dpaths as dp
+
 
 
 def generalised_trainer_PT_convolutional_clusters(**kwargs):
 
 
-    config = DotMap(yaml.safe_load(open(dp['config1'])))
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
 
+    if config.DATA_PARAMS.IS_ROOT:
+        print("Using the correct tpc-trackStudy file in ROOT format")
+        file = ROOT.TFile.Open(config.PATHS.DATA_PATH)
+        dataset = TPCTreeCluster(file,transform=True,conf=config)
 
-    if config.DATA_PARAMS.NUMPY_DATA:
-        print("I'm using NUMPY data")
-        iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
-        MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
+    
+    # elif config.DATA_PARAMS.NUMPY_DATA:
+    #     print("Using NUMPY data")
+    #     iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
+    #     MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
+    #
+    #     dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
+    #                                             transform=config.DATA_PARAMS.NORMALIZE,
+    #                                             TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
+    #                                             np_data=config.DATA_PARAMS.NUMPY_DATA)
+    # else:
+    #     print("Using txt data")
+    #     files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
+    #
+    #     dataset = TPCClusterDatasetConvolutional(files[0],files[2],
+    #                                             transform=config.DATA_PARAMS.NORMALIZE,
+    #                                             TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
+    #                                             np_data=config.DATA_PARAMS.NUMPY_DATA)
 
-        dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-    else:
-        print("I'm using txt data")
-        files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-
-        dataset = TPCClusterDatasetConvolutional(files[0],files[2],
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-
-
-    dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
+    print("Data splitting")
+    # dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
+    dataset_train,dataset_valid = dataset, dataset
 
     train_loader = DataLoader(dataset_train,
                               batch_size=config.HYPER_PARAMS.BATCH_SIZE,
                               shuffle=config.DATA_PARAMS.SHUFFLE_TRAIN,
-                              num_workers=config.DATA_PARAMS.NUM_WORKERS)
+                              num_workers=config.DATA_PARAMS.NUM_WORKERS,
+                              )
     val_loader = DataLoader(dataset_valid,
                             batch_size=config.HYPER_PARAMS.BATCH_SIZE,
                             shuffle=config.DATA_PARAMS.SHUFFLE_VALID,
-                            num_workers=config.DATA_PARAMS.NUM_WORKERS)
+                            num_workers=config.DATA_PARAMS.NUM_WORKERS,
+                            )
 
+    print("Data initialized")
 
     #input shape: 7+nClustersSelected*3 # not for conv
     model = LitClusterConvolutionalNet(config)
@@ -87,7 +98,7 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
                     logger=logger
                     )
 
-
+    print("Trying to fit")
     trainer.fit(model, train_loader, val_loader,)
 
 
