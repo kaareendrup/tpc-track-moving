@@ -1,7 +1,7 @@
 HYPER_PARAMS:
-  MAX_EPOCHS: !!int 1
+  MAX_EPOCHS: !!int 10
   LEARNING_RATE: !!float 1e-3
-  BATCH_SIZE: !!int 2
+  BATCH_SIZE: !!int 96
   SWA_LRS: !!float 1e-2
   LR_SCHEDULER_PATIENCE: !!int 5
   LR_SCHEDULER_FACTOR_: !!float 0.5
@@ -13,13 +13,13 @@ DATA_PARAMS:
   TEST_SIZE: !!float 0.25
   RANDOM_STATE: !!int 42
   NORMALIZE: False
-  SHUFFLE_TRAIN: True
+  SHUFFLE_TRAIN: False
   SHUFFLE_VALID: False
-  NUM_WORKERS: !!int 4
+  NUM_WORKERS: !!int 0
   NUMPY_DATA: False
-  ROOT: True
+  IS_ROOT: True
   TPC_SETTINGS:
-    TPC_CLUSTERS: !!int 10
+    TPC_CLUSTERS: !!int 5
     SPLIT_FRACTION:
       - !!float 0.4
       - !!float 0.2
@@ -37,12 +37,13 @@ PYTORCH_LIGHTNING_PARAMS:
   DEVICES: 1
 
 PATHS:
-  DATA_PATH: '~/data_folder/tpc-trackStudy.root'
+  DATA_PATH_TRAIN: 'train.root'
+  DATA_PATH_VALID: 'valid.root'
   SAVE_PATH: '~/models/pytorch'
-  MODEL_DIR: 'root_file'
+  MODEL_DIR: 'my_network'
 
 MODEL:
-  NAME: 'FConvNet'
+  NAME: 'FNet'
   OUTPUT_SHAPE: !!int 5
   FILTER: !!int 32
 

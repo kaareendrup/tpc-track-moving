@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.dataset_pt import TPCClusterDataset
+from tpcutils.dataset_pt import TPCTreeCluster
 
 from networks.pytorch.nn_lightning import FcNet,LitClusterNet
 from matplotlib import pyplot as plt
@@ -17,51 +17,47 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveraging
 from pytorch_lightning.loggers import TensorBoardLogger
 
+import ROOT
+
 import yaml
 import io
 
 from dotmap import DotMap
 
-from config.paths import dpaths as dp
+
 
 def generalised_trainer_PT_clusters(**kwargs):
 
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
 
-    # config = Struct(**yaml.safe_load(open(dp['config1'])))
-    config = DotMap(yaml.safe_load(open(dp['config1'])))
+    if config.DATA_PARAMS.IS_ROOT:
+        print("Using the tpc-trackStudy file in ROOT format")
+        # train
+        file = ROOT.TFile.Open(config.PATHS.DATA_PATH_TRAIN)
+        dataset_train = TPCTreeCluster(file,transform=True,conf=config)
+        # valid
+        file_valid = ROOT.TFile.Open(config.PATHS.DATA_PATH_VALID)
+        dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
 
-    #files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-    #dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
-    if config.DATA_PARAMS.NUMPY_DATA:
-        print("I'm using NUMPY data")
-        iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
-        MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
 
-        dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-    else:
-        print("I'm using txt data")
-        files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
 
-        dataset = TPCClusterDatasetConvolutional(files[0],files[2],
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                nTPCclusters=config.DATA_PARAMS.TPC_CLUSTERS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
 
-    dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
+    #dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
+    print("Initializing data loaders")
     train_loader = DataLoader(dataset_train,
                               batch_size=config.HYPER_PARAMS.BATCH_SIZE,
-                              shuffle=config.DATA_PARAMS.SHUFFLE_TRAIN)
+                              shuffle=config.DATA_PARAMS.SHUFFLE_TRAIN,
+                              num_workers=config.DATA_PARAMS.NUM_WORKERS)
     val_loader = DataLoader(dataset_valid,
                             batch_size=config.HYPER_PARAMS.BATCH_SIZE,
-                            shuffle=config.DATA_PARAMS.SHUFFLE_VALID)
+                            shuffle=config.DATA_PARAMS.SHUFFLE_VALID,
+                            num_workers=config.DATA_PARAMS.NUM_WORKERS,
+                            )
 
-
+    print("Initializing net")
     #input shape: 7+nClustersSelected*3
-    model = LitClusterNet(dataset._shape(),config)
+    model = LitClusterNet(32,config)
 
     logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
     # training
@@ -86,11 +82,10 @@ def generalised_trainer_PT_clusters(**kwargs):
                     logger=logger
                     )
 
-
+    print("Attempting to fit")
     trainer.fit(model, train_loader, val_loader,)
 
-
-
+    print("Fit finished successfully, dumping config to json...")
     with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:
         yaml.dump(config.toDict(),outfile)
 

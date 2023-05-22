@@ -32,11 +32,11 @@ def generalised_trainer_PT_convolutional_clusters(**kwargs):
     config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
 
     if config.DATA_PARAMS.IS_ROOT:
-        print("Using the correct tpc-trackStudy file in ROOT format")
+        print("Using the tpc-trackStudy file in ROOT format")
         file = ROOT.TFile.Open(config.PATHS.DATA_PATH)
         dataset = TPCTreeCluster(file,transform=True,conf=config)
 
-    
+
     # elif config.DATA_PARAMS.NUMPY_DATA:
     #     print("Using NUMPY data")
     #     iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
