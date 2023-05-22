@@ -119,8 +119,9 @@ class TPCTreeCluster(Dataset):
         # tree_key tpcIni has key: iniTrackRef
         # tree_key tpcMov has key: movTrackRef
 
-        self._EntriesIni = self.tpcIni.GetEntries()
-        self._EntriesMov = self.tpcMov.GetEntries()
+        self.EntriesIni = self.tpcIni.GetEntries()
+        self.EntriesMov = self.tpcMov.GetEntries()
+
 
 
         self.tpcMaxRow = 159 # 159 rows/max number of tpc clusters for padding
@@ -132,9 +133,6 @@ class TPCTreeCluster(Dataset):
 
         if conf is not None:
             self.config= conf
-
-    def __len__(self):
-        return self._EntriesMov
 
 
 
@@ -255,8 +253,11 @@ class TPCTreeCluster(Dataset):
         input_vector = np.concatenate((ini_vec1,ini_vec2,xDist,yDist,zDist,ini_clSector, ini_clRow))
 
         #convert to tensor
-        input_pt = torch.from_numpy(input_vector)
-        target_pt = torch.from_numpy(np_target)
+        input_pt = torch.from_numpy(input_vector).float()
+        target_pt = torch.from_numpy(np_target).float()
 
 
         return input_pt, target_pt
+
+    def __len__(self):
+        return self.EntriesMov

@@ -17,6 +17,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveraging
 from pytorch_lightning.loggers import TensorBoardLogger
 
+import ROOT
 import yaml
 import io
 
@@ -34,12 +35,12 @@ def generalised_trainer_pseudo_graph(**kwargs):
     #dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
 
     if config.DATA_PARAMS.ROOT:
-        print("I'm using the correct tpc-trackStudy file in ROOT format")
+        print("Using the tpc-trackStudy file in ROOT format")
         file = ROOT.TFile.Open(config.PATHS.DATA_PATH)
         dataset = TPCTreeCluster(file,transform=True,conf=config)
-        
+
     if config.DATA_PARAMS.NUMPY_DATA:
-        print("I'm using NUMPY data")
+        print("Using NUMPY data")
         iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
         MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
 
@@ -48,7 +49,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
                                                 TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
     else:
-        print("I'm using txt data")
+        print("Using txt data")
         files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
 
         dataset = TPCClusterDatasetConvolutional(files[0],files[2],

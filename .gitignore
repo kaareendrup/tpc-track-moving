@@ -4,3 +4,4 @@ notebooks
 test_scripts
 *.png*
 .DS_Store
+*.root
