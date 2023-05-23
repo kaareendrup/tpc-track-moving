@@ -4,9 +4,10 @@ import torch
 from torch import nn
 import numpy as np
 
-from networks.pytorch.nn_lightning import FcNet,LitClusterNet
-
-from tpcutils.data import TPCClusterDataset,SeparatedDataHandler
+from networks.pytorch.nn_lightning import LitClusterConvolutionalNet, LitClusterNet
+from tpcutils.dataset_pt import TPCTreeCluster
+from tpcutils.data import SeparatedDataHandler,read_MC_tracks
+from sklearn.model_selection import train_test_split
 
 import glob
 import yaml
@@ -15,57 +16,96 @@ from matplotlib import pyplot as plt
 
 from config.paths import dpaths as dp
 from dotmap import DotMap
+from scipy.stats import gaussian_kde
+import ROOT
 
-def main(select = 'iterationFnet1'):
+import argparse
 
-    config_sel = dp['model_path'] + '/' + select + '/' + 'hyperparams.yml'
-    config = DotMap(yaml.safe_load(open(config_sel)))
+import mplhep as hep
+hep.style.use(hep.style.ALICE)
+
+from array import array
+from ROOT import addressof
+
+from tpcio.TreeIO import create_arrays, write_ROOT_TREE
+
+def main(args):
+
+    #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
+    #config = DotMap(yaml.safe_load(open(config_sel)))
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
 
 
-    files = glob.glob(dp['data_path'] + '/*.txt')
-    for f in files:
-        print(f.split('/')[-1])
 
-    dataset = TPCClusterDataset(files[0],files[3],transform=config.DATA_PARAMS.NORMALIZE)
-
-
-    Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + select + '/' + '*.ckpt')[0])
+    # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
+    Net = LitClusterNet.load_from_checkpoint('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/pytorch/sliced_TPC_splitted_1/FNet_epoch=6-val_loss=5.64.ckpt')
     Net.eval()
+    print("#"*15)
+    print("Model successfully loaded...")
 
+    # valid
+    file_valid = ROOT.TFile.Open(config.PATHS.DATA_PATH_VALID)
+    dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
+    print("Valid data",len(dataset_valid))
 
-    movData = SeparatedDataHandler(files[2])['xamP']
 
     target = []
     preds = []
-    for i in range(dataset.__len__()):
-        tar = dataset.__getitem__(i)
+    data_len = dataset_valid.__len__()
+    for i in range(data_len):
+        sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
+        sys.stdout.flush()
 
-        target.append(tar[1].detach().numpy()[0:7])
+        input, tar = dataset_valid.__getitem__(i)
+
+        target.append(tar.detach().numpy())
+
+        input = input.unsqueeze(0)
 
         with torch.no_grad():
-            yhat = Net(tar[0])
+            yhat = Net(input)
 
-        preds.append(yhat.detach().numpy())
+            preds.append(yhat.detach().numpy())
 
     target = np.array(target)
-    preds = np.array(preds)
+    preds = np.array(preds).squeeze()
 
-    f,ax = plt.subplots(2,7,figsize=(22,4))
+    write_ROOT_TREE(target,preds)
+
+    print("Valid target data shape: {}".format(target.shape))
+    print("Prediction valid data shape: {}".format(preds.shape))
+
+    f,ax = plt.subplots(1,5,figsize=(16,4))
     #ax = ax.flatten()
 
-    names = ["X",r"$\alpha$","Y","Z",r"$\mathrm{sin}(\phi)$",r"$\mathrm{tan}(\lambda)$",r"$q/p_\mathrm{T}$"]
-    for i in range(7):
-        ax[0][i].hist2d(target[:,i],preds[:,i],bins=50)
-        ax[0][i].set(xlabel='Target', ylabel='Pred')
-        ax[0][i].set_title(names[i])
+    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
+    lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
 
-        ax[0][i].axline( (0,0),slope=1,linestyle='--',color='red')
+    text_size = 10
+    for i in range(5):
+        y = preds[:,i]
+        x = target[:,i]
+        xy = np.vstack([x,y])
+        z = gaussian_kde(xy)(xy)
+        idx = z.argsort()
+        x, y, z = x[idx], y[idx], z[idx]
+        ax[i].scatter(x, y, c=z, s=10)
+        #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
 
-        ax[1][i].hist2d(target[:,i],movData[:,i],bins=50)
-        ax[1][i].set(xlabel='Target', ylabel='MovTrackRef')
-        ax[1][i].set_title(names[i])
 
-        ax[1][i].axline( (0,0),slope=1,linestyle='--',color='red')
+
+        ax[i].set_xlabel('MovTrackRefit',size=text_size)
+        ax[i].set_ylabel('NN Prediction',size=text_size)
+        ax[i].set_title("{}".format(names[i]),size=text_size)
+
+        ax[i].set_xlim(*lims[i])
+        ax[i].set_ylim(*lims[i])
+
+        ax[i].tick_params(axis='both', which='major', labelsize=text_size)
+
+        ax[i].set_aspect('equal')
+
+        ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
     # ax[-1].set_visible(False)
 
@@ -73,13 +113,7 @@ def main(select = 'iterationFnet1'):
 
     plt.show()
 
-
-
-
-
-
-
-
+    f.savefig("pred.png",bbox_inches='tight')
 
 
 
@@ -88,21 +122,18 @@ def main(select = 'iterationFnet1'):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__=='__main__':
 
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--select",
+                        default="sliced_TPC_splitted_1",
+                        required=False,
+                        help="model directory, in config file known as param MODEL_DIR"
+                        )
+
+
+
+    args = parser.parse_args()
+
+    main(args)
