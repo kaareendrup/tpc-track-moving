@@ -57,7 +57,7 @@ def generalised_trainer_PT_clusters(**kwargs):
 
     print("Initializing net")
     #input shape: 7+nClustersSelected*3
-    model = LitClusterNet(32,config)
+    model = LitClusterNet(dataset_train._shape(),config)
 
     logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
     # training

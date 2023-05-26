@@ -11,6 +11,7 @@ import ROOT
 from tpcutils.data import DataHandler,SeparatedDataHandler
 from tpcutils.data import select_tpc_clusters_idx
 
+ROOT.gInterpreter.ProcessLine(f'#include "{sys.path[-1]}/tpcio/TrackTPC.h"')
 #### PYTORCH
 
 class TPCClusterDataset(Dataset):
@@ -138,6 +139,9 @@ class TPCTreeCluster(Dataset):
 
     def _padForClusters(self,array):
         return np.pad(array,(0,self.tpcMaxRow-len(array)),"constant")
+
+    def _shape(self):
+        return self.__getitem__(0)[0].shape[0]
 
 
     def __iniConstruct(self,):

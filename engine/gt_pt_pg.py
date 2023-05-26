@@ -29,15 +29,24 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
 
     # config = Struct(**yaml.safe_load(open(dp['config1'])))
-    config = DotMap(yaml.safe_load(open(dp['config1'])))
-
+    # config = DotMap(yaml.safe_load(open(dp['config1'])))
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
+    
     #files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
     #dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
 
-    if config.DATA_PARAMS.ROOT:
+
+    if config.DATA_PARAMS.IS_ROOT:
         print("Using the tpc-trackStudy file in ROOT format")
-        file = ROOT.TFile.Open(config.PATHS.DATA_PATH)
-        dataset = TPCTreeCluster(file,transform=True,conf=config)
+        # train
+        file = ROOT.TFile.Open(config.PATHS.DATA_PATH_TRAIN)
+        dataset_train = TPCTreeCluster(file,transform=True,conf=config)
+        # valid
+        file_valid = ROOT.TFile.Open(config.PATHS.DATA_PATH_VALID)
+        dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
+
+
+
 
     if config.DATA_PARAMS.NUMPY_DATA:
         print("Using NUMPY data")
@@ -58,8 +67,9 @@ def generalised_trainer_pseudo_graph(**kwargs):
                                                 np_data=config.DATA_PARAMS.NUMPY_DATA)
 
 
-    dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
+    #dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
 
+    print("Initializing data loaders")
     train_loader = DataLoader(dataset_train,
                               batch_size=config.HYPER_PARAMS.BATCH_SIZE,
                               shuffle=config.DATA_PARAMS.SHUFFLE_TRAIN,
@@ -67,9 +77,11 @@ def generalised_trainer_pseudo_graph(**kwargs):
     val_loader = DataLoader(dataset_valid,
                             batch_size=config.HYPER_PARAMS.BATCH_SIZE,
                             shuffle=config.DATA_PARAMS.SHUFFLE_VALID,
-                            num_workers=config.DATA_PARAMS.NUM_WORKERS)
+                            num_workers=config.DATA_PARAMS.NUM_WORKERS,
+                            )
 
-    model = PseudoGraphNet(dataset._shape(), config, train_loader)
+    
+    model = PseudoGraphNet(dataset_train._shape(), config, train_loader)
 
     logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
 
