@@ -15,8 +15,8 @@ def create_arrays(tree,var=None):
 
     return my_var, tar_var
 
-def write_ROOT_TREE(tar,pred):
-    file = ROOT.TFile.Open("TPC-SCD-NN-Prediction-FNet.root", "RECREATE")
+def write_ROOT_TREE(tar,pred,tree_name='FNet'):
+    file = ROOT.TFile.Open(f"TPC-SCD-NN-Prediction-{tree_name}.root", "RECREATE")
 
     tree = ROOT.TTree("tpc","tree")
 
