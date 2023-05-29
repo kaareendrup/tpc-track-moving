@@ -173,11 +173,13 @@ class mRNN(nn.Module):
         # Fully connected layer
         self.fc = nn.Linear(hidden_dim, output_size)
     
-    def forward(self, x):
-        
+    def forward(self, x,device):
+        x = x.to(device)
+
         batch_size = x.size(0)
 
         hidden = self.init_hidden(batch_size)
+        hidden = hidden.to(device)
 
         out, hidden = self.rnn(x, hidden)
         

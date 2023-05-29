@@ -46,6 +46,8 @@ class LitClusterNet(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch
+        x.to(self.device)
+        y.to(self.device)
         logits = self.forward(x)
 
         loss = F.mse_loss(logits, y)
@@ -54,6 +56,8 @@ class LitClusterNet(pl.LightningModule):
 
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
+        x.to(self.device)
+        y.to(self.device)
         logits = self.forward(x)
 
         loss = F.mse_loss(logits, y)
@@ -205,7 +209,7 @@ class LitRNN(pl.LightningModule):
         self.save_hyperparameters()
 
     def forward(self, x):
-        return self.net(x)
+        return self.net(x,self.device)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
