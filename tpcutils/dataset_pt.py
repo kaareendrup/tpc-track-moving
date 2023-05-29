@@ -5,13 +5,15 @@ import pandas as pd
 
 import torch
 from torch.utils.data import Dataset
+import operator
 
 import ROOT
 
 from tpcutils.data import DataHandler,SeparatedDataHandler
 from tpcutils.data import select_tpc_clusters_idx
 
-ROOT.gInterpreter.ProcessLine(f'#include "{sys.path[-1]}/tpcio/TrackTPC.h"')
+# ROOT.gInterpreter.ProcessLine(f'#include "{sys.path[-1]}/tpcio/TrackTPC.h"')
+ROOT.gInterpreter.ProcessLine('#include "/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/tpcio/TrackTPC.h"')
 #### PYTORCH
 
 class TPCClusterDataset(Dataset):
@@ -127,7 +129,7 @@ class TPCTreeCluster(Dataset):
 
         self.tpcMaxRow = 159 # 159 rows/max number of tpc clusters for padding
 
-        self.nKalmanFits = 5
+        self.nKalmanFits = 6
 
         self.transform=transform
 
@@ -161,16 +163,16 @@ class TPCTreeCluster(Dataset):
         iniQ2Pt = self.tpcIni.iniTrackRef.getQ2Pt()
 
         #ini toc clusters
-        ini_clX = np.array(self.tpcIni.clX)
-        ini_clY = np.array(self.tpcIni.clY)
-        ini_clZ = np.array(self.tpcIni.clZ)
+        ini_clX = self.tpcIni.clX
+        ini_clY = self.tpcIni.clY
+        ini_clZ = self.tpcIni.clZ
 
-        ini_counter = self.tpcIni.counter
+        #ini_counter = self.tpcIni.counter
 
         ini_vec1 = np.array([iniX, iniAlpha])
         ini_vec2 = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
 
-        return ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_counter, ini_clSector, ini_clRow
+        return ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
     def __movConstruct(self):
 
@@ -184,29 +186,32 @@ class TPCTreeCluster(Dataset):
         np_target = np.array([ MovY, MovZ, MovSnp, MovTgl, MovQ2Pt ])
 
         #construct moved tpc clusters
-        mov_clX = np.array(self.tpcMov.clX)
-        mov_clY = np.array(self.tpcMov.clY)
-        mov_clZ = np.array(self.tpcMov.clZ)
+        #mov_clX = np.array(self.tpcMov.clX)
+        #mov_clY = np.array(self.tpcMov.clY)
+        #mov_clZ = np.array(self.tpcMov.clZ)
+        mov_clX = self.tpcMov.clX
+        mov_clY = self.tpcMov.clY
+        mov_clZ = self.tpcMov.clZ
 
-        n_copy = self.tpcMov.copy
-        maxCopy = self.tpcMov.maxCopy
+        # n_copy = self.tpcMov.copy
+        # maxCopy = self.tpcMov.maxCopy
 
-        mov_counter = self.tpcMov.counter
+        # mov_counter = self.tpcMov.counter
 
-        return np_target, mov_clX, mov_clY, mov_clZ, mov_counter, n_copy, maxCopy
+        return np_target, mov_clX, mov_clY, mov_clZ#, mov_counter, n_copy, maxCopy
 
     def __match_tracks(self):
 
         counter = self.tpcMov.counter
-        n_copy = self.tpcMov.copy
-        maxCopy = self.tpcMov.maxCopy
+        # n_copy = self.tpcMov.copy
+        # maxCopy = self.tpcMov.maxCopy
 
         self.tpcIni.GetEntry(counter)
 
 
 
     def _getDistortionEffects(self,arr1,arr2):
-        diff = arr1 - arr2
+        diff = list(map(operator.sub, arr1, arr2))
         return diff
 
 
@@ -224,16 +229,16 @@ class TPCTreeCluster(Dataset):
             print("Tracks are matched incorrectly, exiting...")
             sys.exit(1)
 
-        np_target, mov_clX, mov_clY, mov_clZ, mov_counter, n_copy, maxCopy = self.__movConstruct()
+        np_target, mov_clX, mov_clY, mov_clZ = self.__movConstruct()
 
-        ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_counter, ini_clSector, ini_clRow = self.__iniConstruct()
+        ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
 
 
 
-        xDist = self._getDistortionEffects(mov_clX,ini_clX)
-        yDist = self._getDistortionEffects(mov_clY,ini_clY)
-        zDist = self._getDistortionEffects(mov_clZ,ini_clZ)
-
+        xDist = np.array(self._getDistortionEffects(mov_clX,ini_clX))
+        yDist = np.array(self._getDistortionEffects(mov_clY,ini_clY))
+        zDist = np.array(self._getDistortionEffects(mov_clZ,ini_clZ))
+        
         if not self.transform:
             ini_clSector = self._padForClusters(ini_clSector)
             ini_clRow = self._padForClusters(ini_clRow)
@@ -253,7 +258,7 @@ class TPCTreeCluster(Dataset):
             zDist = zDist[idx_sel]
 
 
-        #concatenating everything (this is dumb, but easier to implement in O2)
+        #concatenating everything (easier to implement in O2)
         input_vector = np.concatenate((ini_vec1,ini_vec2,xDist,yDist,zDist,ini_clSector, ini_clRow))
 
         #convert to tensor
@@ -262,6 +267,7 @@ class TPCTreeCluster(Dataset):
 
 
         return input_pt, target_pt
+    
 
     def __len__(self):
         return self.EntriesMov
