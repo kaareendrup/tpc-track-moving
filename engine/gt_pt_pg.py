@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.dataset_pt import TPCClusterDataset
+from tpcutils.dataset_pt import TPCTreeCluster
 
 from networks.pytorch.nn_lightning import PseudoGraphNet
 from matplotlib import pyplot as plt
@@ -27,14 +27,7 @@ from config.paths import dpaths as dp
 
 def generalised_trainer_pseudo_graph(**kwargs):
 
-
-    # config = Struct(**yaml.safe_load(open(dp['config1'])))
-    # config = DotMap(yaml.safe_load(open(dp['config1'])))
-    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
-    
-    #files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-    #dataset = TPCClusterDataset(files[0],files[2],transform=config.DATA_PARAMS.NORMALIZE)
-
+    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
 
     if config.DATA_PARAMS.IS_ROOT:
         print("Using the tpc-trackStudy file in ROOT format")
@@ -46,28 +39,8 @@ def generalised_trainer_pseudo_graph(**kwargs):
         dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
 
 
-
-
-    if config.DATA_PARAMS.NUMPY_DATA:
-        print("Using NUMPY data")
-        iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
-        MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
-
-        dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-    else:
-        print("Using txt data")
-        files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-
-        dataset = TPCClusterDatasetConvolutional(files[0],files[2],
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-
-
     #dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)
+    print(config.DATA_PARAMS.TPC_SETTINGS.TPC_CLUSTERS)
 
     print("Initializing data loaders")
     train_loader = DataLoader(dataset_train,
@@ -79,7 +52,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
                             shuffle=config.DATA_PARAMS.SHUFFLE_VALID,
                             num_workers=config.DATA_PARAMS.NUM_WORKERS,
                             )
-
+    print(dataset_train._shape())
     
     model = PseudoGraphNet(dataset_train._shape(), config, train_loader)
 
@@ -110,7 +83,6 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
 
     trainer.fit(model, train_loader, val_loader,)
-
 
 
     with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:

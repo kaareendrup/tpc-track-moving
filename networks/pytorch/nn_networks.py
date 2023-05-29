@@ -128,22 +128,27 @@ class DeepConvSimpleNet(nn.Module):
 
 class PseudoGraph(nn.Module):
 
-    def __init__(self,input_shape=87,output_shape=5):
+    def __init__(self,input_shape,output_shape=5):
         super(PseudoGraph,self).__init__()
 
-        in_shape_2D = input_shape - 60 + 3
+        # 7 for the track vector, 5 for the xyz (+2) coordinate of each cluster
+        self._n_node_coor = 5
+        self._n_track_params = 7
+
+        in_shape_2D = self._n_track_params + self._n_node_coor
+        n_clusters = int((input_shape - self._n_track_params) / self._n_node_coor)
 
         self.fc1 = nn.Linear(in_shape_2D, 50)
         self.fc2 = nn.Linear(50, 50)
         self.fc3 = nn.Linear(50, 50)
-        self.fc4 = nn.Linear(20*50, output_shape)
+        self.fc4 = nn.Linear(n_clusters*50, output_shape)
 
     def forward(self, x):
 
-        x_graph = x[:,-60:]
-        x_graph = torch.reshape(x_graph, (x_graph.size()[0],-1,3))
+        x_graph = x[:,self._n_track_params:]
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0],-1,self._n_node_coor))
 
-        x_vec = x[:,:-60]
+        x_vec = x[:,:self._n_track_params]
         x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
 
         x = torch.cat([x_graph, x_repeat], dim=2)
