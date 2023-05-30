@@ -28,7 +28,7 @@ from dotmap import DotMap
 
 def generalised_trainer_PT_clusters(**kwargs):
 
-    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
+    config = DotMap(yaml.safe_load(open('../config/config_file.yml')))
 
     if config.DATA_PARAMS.IS_ROOT:
         print("Using the tpc-trackStudy file in ROOT format")
@@ -88,6 +88,7 @@ def generalised_trainer_PT_clusters(**kwargs):
     print("Fit finished successfully, dumping config to json...")
     with io.open(config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR + '/hyperparams.yml', 'w', encoding='utf8') as outfile:
         yaml.dump(config.toDict(),outfile)
+        print("Successful hyperparam dump")
 
 
 
