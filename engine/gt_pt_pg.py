@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.dataset_pt import TPCClusterDataset
+from tpcutils.dataset_pt import TPCClusterDataset,TPCTreeCluster
 
 from networks.pytorch.nn_lightning import PseudoGraphNet
 from matplotlib import pyplot as plt
@@ -44,27 +44,6 @@ def generalised_trainer_pseudo_graph(**kwargs):
         # valid
         file_valid = ROOT.TFile.Open(config.PATHS.DATA_PATH_VALID)
         dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
-
-
-
-
-    if config.DATA_PARAMS.NUMPY_DATA:
-        print("Using NUMPY data")
-        iniTrack = config.PATHS.DATA_PATH + '/iniTrack.npy'
-        MovTrackRefit = config.PATHS.DATA_PATH + '/movTrackRef.npy'
-
-        dataset = TPCClusterDatasetConvolutional(iniTrack,MovTrackRefit,
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
-    else:
-        print("Using txt data")
-        files = glob.glob(config.PATHS.DATA_PATH + '/*.txt')
-
-        dataset = TPCClusterDatasetConvolutional(files[0],files[2],
-                                                transform=config.DATA_PARAMS.NORMALIZE,
-                                                TPC_settings=config.DATA_PARAMS.TPC_SETTINGS,
-                                                np_data=config.DATA_PARAMS.NUMPY_DATA)
 
 
     #dataset_train,dataset_valid = train_test_split(dataset,test_size=config.DATA_PARAMS.TEST_SIZE, random_state=config.DATA_PARAMS.RANDOM_STATE)

@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from networks.pytorch.nn_lightning import LitRNN
+from networks.pytorch.nn_lightning import LitClusterConvolutionalNet, LitClusterNet,PseudoGraphNet
 from tpcutils.dataset_pt import TPCTreeCluster
 from tpcutils.data import SeparatedDataHandler,read_MC_tracks
 from sklearn.model_selection import train_test_split
@@ -33,12 +33,12 @@ def main(args):
 
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
     #config = DotMap(yaml.safe_load(open(config_sel)))
-    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/hyperparams.yml')))
 
 
 
     # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
-    Net = LitRNN.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/RNN_5/*.ckpt')[0])
+    Net = PseudoGraphNet.load_from_checkpoint('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/PseudoGraph_epoch=9-val_loss=-0.18.ckpt') #map_location=torch.device('cpu')
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
@@ -55,23 +55,23 @@ def main(args):
     ini=[]
 
     imposedTB,dz = [], []
-
     for i in range(data_len):
         sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
         sys.stdout.flush()
 
         input, tar = dataset_valid.__getitem__(i)
 
+        target.append(tar.detach().numpy())
+
         ini.append([dataset_valid.tpcIni.iniTrackRef.getY(),dataset_valid.tpcIni.iniTrackRef.getZ(),dataset_valid.tpcIni.iniTrackRef.getSnp(),dataset_valid.tpcIni.iniTrackRef.getTgl(),dataset_valid.tpcIni.iniTrackRef.getQ2Pt()])
         imposedTB.append(dataset_valid.tpcMov.imposedTB)
         dz.append(dataset_valid.tpcMov.dz)
 
-        target.append(tar.detach().numpy())
-        input = input.unsqueeze(0).unsqueeze(0)
+        input = input.unsqueeze(0)
 
         with torch.no_grad():
-            yhat,_ = Net(input)
-            
+            yhat = Net(input)
+
             preds.append(yhat.detach().numpy())
 
     target = np.array(target)
@@ -79,10 +79,9 @@ def main(args):
 
     ini = np.array(ini)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
-    
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='RNN')
-    print("Finished writing tree")
+    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='PseudoGraph')
+
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
 
@@ -91,9 +90,6 @@ def main(args):
 
     names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
     lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
-    # skal plotte prediction:
-    # MoveTrackRefit" vs "iniTrackRef - MoveTrackRefit" (for Z should be iniTrackRef.getZ() - dz - MoveTrackRefit.getZ()
-    #
 
     text_size = 10
     for i in range(5):
@@ -127,7 +123,7 @@ def main(args):
 
     plt.show()
 
-    f.savefig("RNNpred.png",bbox_inches='tight')
+    f.savefig("pred.png",bbox_inches='tight')
 
 
 
