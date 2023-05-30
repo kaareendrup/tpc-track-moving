@@ -1,6 +1,6 @@
 import sys
 
-from tpcutils.dataset_pt import TPCClusterDataset,TPCTreeCluster
+from tpcutils.dataset_pt import TPCTreeCluster
 
 from networks.pytorch.nn_lightning import PseudoGraphNet
 from matplotlib import pyplot as plt
