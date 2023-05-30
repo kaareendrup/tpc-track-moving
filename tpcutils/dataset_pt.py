@@ -122,7 +122,7 @@ class TPCTreeCluster(Dataset):
         # tree_key tpcMov has key: movTrackRef
 
         self.EntriesIni = self.tpcIni.GetEntries()
-        self.EntriesMov = self.tpcMov.GetEntries() 
+        self.EntriesMov =  50 #self.tpcMov.GetEntries() 
 
 
 
