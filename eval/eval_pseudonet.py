@@ -33,12 +33,12 @@ def main(args):
 
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
     #config = DotMap(yaml.safe_load(open(config_sel)))
-    #config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/hyperparams.yml')))
+    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/hyperparams_joachiha.yml')))
 
 
 
     # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
-    Net = PseudoGraphNet.load_from_checkpoint('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/PseudoGraph_epoch=9-val_loss=-0.18.ckpt') #map_location=torch.device('cpu')
+    Net = PseudoGraphNet.load_from_checkpoint('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/PseudoGraph_epoch=9-val_loss=-0.18.ckpt',map_location=torch.device('cpu'))
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
