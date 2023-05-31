@@ -38,7 +38,8 @@ def main(args):
 
 
     # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
-    Net = LitClusterNet.load_from_checkpoint('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/pytorch/sliced_TPC_splitted_1/FNet_epoch=6-val_loss=5.64.ckpt')
+    #Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_4_angular/*.ckpt')[0])
+    Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_2/*.ckpt')[0])
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
@@ -52,6 +53,9 @@ def main(args):
     target = []
     preds = []
     data_len = dataset_valid.__len__()
+    ini=[]
+
+    imposedTB,dz = [], []
     for i in range(data_len):
         sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
         sys.stdout.flush()
@@ -77,7 +81,8 @@ def main(args):
     ini = np.array(ini)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='FNet')
+    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='FNet-2')
+    print("Succesfully completed ROOT tree")
 
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
