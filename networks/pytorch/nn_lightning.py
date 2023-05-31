@@ -69,7 +69,8 @@ class LitClusterNet(pl.LightningModule):
         y.to(self.device)
         logits = self.forward(x)
 
-
+        # logits: Y:0 Z:1 Phi:2 Tgl:3 q2:4
+        # y: Y:0 Z:1 Phi:2 Tgl:3 q2:4
         linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
         angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
 
@@ -205,7 +206,7 @@ class PseudoGraphNet(pl.LightningModule):
         linloss = self._loss1( torch.cat((logits[:,:2],logits[:,3:5]), dim=1) , torch.cat((y[:,:2],y[:,3:]), dim=1) )
         # angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,5].unsqueeze(1)), dim=1), y[:,2].unsqueeze(1) )
         angloss = self._loss2( torch.cat((logits[:,2], logits[:,5]), dim=0), torch.cat((y[:,2],y[:,3]),dim=0) )
-        print("angloss",angloss.shape)
+        
         loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
 
