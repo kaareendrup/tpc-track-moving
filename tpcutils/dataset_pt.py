@@ -16,6 +16,7 @@ from tpcutils.data import select_tpc_clusters_idx
 ROOT.gInterpreter.ProcessLine('#include "/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/tpcio/TrackTPC.h"')
 #### PYTORCH
 
+#Legacy
 class TPCClusterDataset(Dataset):
     def __init__(self, tracks_path, mov_path, transform=False,np_data=True):
 
@@ -50,6 +51,7 @@ class TPCClusterDataset(Dataset):
     def _shape(self,):
         return self.X[2,:].shape[0]
 
+#Legacy
 class TPCClusterDatasetConvolutional(Dataset):
     def __init__(self, tracks_path, mov_path,TPC_settings, transform=False,tpcNorm=False,np_data=True):
 
@@ -126,7 +128,6 @@ class TPCTreeCluster(Dataset):
         self.EntriesMov = self.tpcMov.GetEntries() 
 
 
-
         self.tpcMaxRow = 159 # 159 rows/max number of tpc clusters for padding
 
         self.nKalmanFits = 6
@@ -137,13 +138,16 @@ class TPCTreeCluster(Dataset):
         if conf is not None:
             self.config= conf
 
+        clusters = self.config.DATA_PARAMS.TPC_SETTINGS.TPC_CLUSTERS
+        self.__shape = 7 + (clusters*5) # 7 ini params, clx,cly,clz,sector,row
+
 
 
     def _padForClusters(self,array):
         return np.pad(array,(0,self.tpcMaxRow-len(array)),"constant")
 
     def _shape(self):
-        return self.__getitem__(0)[0].shape[0]
+        return self.__shape
 
 
     def __iniConstruct(self,):
@@ -214,6 +218,13 @@ class TPCTreeCluster(Dataset):
         diff = list(map(operator.sub, arr1, arr2))
         return diff
 
+    def _checkVectorlen_(self,array):
+
+        if len(array) != self.__shape:
+            return np.pad(array,(0,self.__shape-len(array)),"constant")
+        else:
+            return array
+
 
     def __getitem__(self,idx):
 
@@ -251,6 +262,7 @@ class TPCTreeCluster(Dataset):
                 idx_sel = select_tpc_clusters_idx(self.config.DATA_PARAMS.TPC_SETTINGS,len(xDist)-1)
             else:
                 idx_sel = select_tpc_clusters_idx(config.DATA_PARAMS.TPC_SETTINGS,len(xDist)-1)
+
             ini_clSector = ini_clSector[idx_sel]
             ini_clRow = ini_clRow[idx_sel]
             xDist = xDist[idx_sel]
@@ -260,6 +272,8 @@ class TPCTreeCluster(Dataset):
 
         #concatenating everything (easier to implement in O2)
         input_vector = np.concatenate((ini_vec1,ini_vec2,xDist,yDist,zDist,ini_clSector, ini_clRow))
+        #checking input vector and padding with zeros if it doesn't match the length
+        input_vector = self._checkVectorlen_(input_vector)
 
         #convert to tensor
         input_pt = torch.from_numpy(input_vector).float()

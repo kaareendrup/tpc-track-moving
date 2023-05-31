@@ -152,9 +152,11 @@ def select_tpc_clusters_idx(TPC_settings,cluster_length=159-1,):
 
     s = pd.Series(idx)
     dupl = s.duplicated()
-    assert dupl.any()!=True, "change your iter, you are selecting same clusters"
-
-    assert len(idx)==nTPCclusters, 'Change split_fraction or nTPCclusters so your output shape matches the number of tpc clusters you selected'
+    s.drop_duplicates(inplace=True,keep='last')
+    #instead we pad the array
+    # assert dupl.any()!=True, "change your iter, you are selecting same clusters"
+    idx = np.array(s)
+    # assert len(idx)==nTPCclusters, 'Change split_fraction or nTPCclusters so your output shape matches the number of tpc clusters you selected'
     return idx
 
 def GetClusterData(data,i=0,TPC_settings={},np_data=True):
