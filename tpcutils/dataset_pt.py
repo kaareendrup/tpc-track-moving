@@ -12,7 +12,8 @@ import ROOT
 from tpcutils.data import DataHandler,SeparatedDataHandler
 from tpcutils.data import select_tpc_clusters_idx
 
-ROOT.gInterpreter.ProcessLine('#include "../tpcio/TrackTPC.h"')
+# ROOT.gInterpreter.ProcessLine('#include "../tpcio/TrackTPC.h"')
+ROOT.gInterpreter.ProcessLine('#include "/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/tpcio/TrackTPC.h"')
 #### PYTORCH
 
 class TPCClusterDataset(Dataset):
@@ -122,7 +123,7 @@ class TPCTreeCluster(Dataset):
         # tree_key tpcMov has key: movTrackRef
 
         self.EntriesIni = self.tpcIni.GetEntries()
-        self.EntriesMov =  50 #self.tpcMov.GetEntries() 
+        self.EntriesMov = self.tpcMov.GetEntries() 
 
 
 

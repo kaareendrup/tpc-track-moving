@@ -72,7 +72,6 @@ class LitClusterNet(pl.LightningModule):
 
         linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
         angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
-        print("angloss",angloss)
 
         loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
         #loss = F.mse_loss(logits, y)
