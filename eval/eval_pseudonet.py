@@ -4,10 +4,10 @@ import torch
 from torch import nn
 import numpy as np
 
-from networks.pytorch.nn_lightning import LitClusterConvolutionalNet, LitClusterNet,PseudoGraphNet
+from networks.pytorch.nn_lightning import PseudoGraphNet
 from tpcutils.dataset_pt import TPCTreeCluster
-from tpcutils.data import SeparatedDataHandler,read_MC_tracks
-from sklearn.model_selection import train_test_split
+# from tpcutils.data import SeparatedDataHandler,read_MC_tracks
+# from sklearn.model_selection import train_test_split
 
 import glob
 import yaml
@@ -16,13 +16,13 @@ from matplotlib import pyplot as plt
 
 from config.paths import dpaths as dp
 from dotmap import DotMap
-from scipy.stats import gaussian_kde
+# from scipy.stats import gaussian_kde
 import ROOT
 
 import argparse
 
-import mplhep as hep
-hep.style.use(hep.style.ALICE)
+# import mplhep as hep
+# hep.style.use(hep.style.ALICE)
 
 from array import array
 from ROOT import addressof
@@ -33,7 +33,7 @@ def main(args):
 
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
     #config = DotMap(yaml.safe_load(open(config_sel)))
-    config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/hyperparams.yml')))
+    #config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/PseudoGraph_1/hyperparams.yml')))
 
 
 
@@ -82,48 +82,49 @@ def main(args):
 
     write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='PseudoGraph')
 
-    print("Valid target data shape: {}".format(target.shape))
-    print("Prediction valid data shape: {}".format(preds.shape))
+    print("Written tree")
+    # print("Valid target data shape: {}".format(target.shape))
+    # print("Prediction valid data shape: {}".format(preds.shape))
 
-    f,ax = plt.subplots(1,5,figsize=(16,4))
-    #ax = ax.flatten()
+    # f,ax = plt.subplots(1,5,figsize=(16,4))
+    # #ax = ax.flatten()
 
-    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
-    lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
+    # names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
+    # lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
 
-    text_size = 10
-    for i in range(5):
-        y = preds[:,i]
-        x = target[:,i]
-        xy = np.vstack([x,y])
-        z = gaussian_kde(xy)(xy)
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax[i].scatter(x, y, c=z, s=10)
-        #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
+    # text_size = 10
+    # for i in range(5):
+    #     y = preds[:,i]
+    #     x = target[:,i]
+    #     xy = np.vstack([x,y])
+    #     z = gaussian_kde(xy)(xy)
+    #     idx = z.argsort()
+    #     x, y, z = x[idx], y[idx], z[idx]
+    #     ax[i].scatter(x, y, c=z, s=10)
+    #     #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
 
 
 
-        ax[i].set_xlabel('MovTrackRefit',size=text_size)
-        ax[i].set_ylabel('NN Prediction',size=text_size)
-        ax[i].set_title("{}".format(names[i]),size=text_size)
+    #     ax[i].set_xlabel('MovTrackRefit',size=text_size)
+    #     ax[i].set_ylabel('NN Prediction',size=text_size)
+    #     ax[i].set_title("{}".format(names[i]),size=text_size)
 
-        ax[i].set_xlim(*lims[i])
-        ax[i].set_ylim(*lims[i])
+    #     ax[i].set_xlim(*lims[i])
+    #     ax[i].set_ylim(*lims[i])
 
-        ax[i].tick_params(axis='both', which='major', labelsize=text_size)
+    #     ax[i].tick_params(axis='both', which='major', labelsize=text_size)
 
-        ax[i].set_aspect('equal')
+    #     ax[i].set_aspect('equal')
 
-        ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
+    #     ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
-    # ax[-1].set_visible(False)
+    # # ax[-1].set_visible(False)
 
-    plt.tight_layout()
+    # plt.tight_layout()
 
-    plt.show()
+    # plt.show()
 
-    f.savefig("pred.png",bbox_inches='tight')
+    # f.savefig("pred.png",bbox_inches='tight')
 
 
 
