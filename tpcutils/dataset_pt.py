@@ -175,7 +175,7 @@ class TPCTreeCluster(Dataset):
 
         ini_vec1 = np.array([iniX, iniAlpha])
         ini_vec2 = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
-
+        
         return ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
     def __movConstruct(self):
