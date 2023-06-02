@@ -175,7 +175,7 @@ class TPCTreeCluster(Dataset):
 
         ini_vec1 = np.array([iniX, iniAlpha])
         ini_vec2 = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
-        
+        # X Alpha Y Z Snp Lambda q2 x y z sector row
         return ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
     def __movConstruct(self):
@@ -201,7 +201,7 @@ class TPCTreeCluster(Dataset):
         # maxCopy = self.tpcMov.maxCopy
 
         # mov_counter = self.tpcMov.counter
-
+        # Y Z Snp Lambda q2pt
         return np_target, mov_clX, mov_clY, mov_clZ#, mov_counter, n_copy, maxCopy
 
     def __match_tracks(self):
@@ -242,8 +242,10 @@ class TPCTreeCluster(Dataset):
 
         np_target, mov_clX, mov_clY, mov_clZ = self.__movConstruct()
 
+        # add clX min/max # add temporary demand for same sector tracks
+        # rescale perhaps
         ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
-
+        
 
 
         xDist = np.array(self._getDistortionEffects(mov_clX,ini_clX))
