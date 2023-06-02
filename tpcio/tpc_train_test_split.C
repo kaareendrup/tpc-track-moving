@@ -11,27 +11,51 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
   auto *trainList = new TEntryList();
   auto *validList = new TEntryList();
 
-
+  Bool_t fSector = kTRUE;
 
   auto *inputFile = TFile::Open(inputfile, "READ");
   auto *tpcIni = inputFile->Get<TTree>("tpcIni");
   auto *tpcMov = inputFile->Get<TTree>("tpcMov");
 
-  for (Int_t i(0); i<tpcMov->GetEntries(); ++i){
-    cout << "\r" << i << "/" << tpcMov->GetEntries() << flush;
-    Float_t r = gRandom->Rndm();
-    if (r<0.2){
-      validList->Enter(i);
-    }
-    else{
-      trainList->Enter(i);
-    }
+  // select only same sector tracks (initrack)
+  Long64_t counter;
+  tpcMov->SetBranchAddress("counter",&counter);
+  std::vector<short> *clSector = nullptr;
+  tpcIni->SetBranchAddress("clSector",&clSector);
 
+  Int_t myCount = 0;
+
+  for (Int_t i(0); i<tpcMov->GetEntries(); ++i){
+    cout << "\r" << i+1 << "/" << tpcMov->GetEntries() << flush;
+
+
+    if (fSector){
+      tpcMov->GetEntry(i);
+      tpcIni->GetEntry(counter);
+
+      
+      if (std::adjacent_find(clSector->begin(), clSector->end(), std::not_equal_to<short>()) == clSector->end()){
+        Float_t r = gRandom->Rndm();
+          if (r<0.2){
+            validList->Enter(i);
+          }
+          else{
+            trainList->Enter(i);
+          }
+      }
+      // if (all_of(clSector->begin(), clSector->end(), [&] (int j) {return j == clSector[0][j];})){}
+          //all are the same          
+      else{
+        continue;
+      }
+    
+    }
+    // end
   }
   cout << endl;
 
   tpcMov->SetEntryList(trainList);
-  auto trainFile = TFile::Open("train.root", "RECREATE");
+  auto trainFile = TFile::Open("train_sec.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto trainTree = tpcMov->CopyTree("");
   auto trainTreeIni = tpcIni->CopyTree("");
@@ -40,7 +64,7 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
 
 
   tpcMov->SetEntryList(validList);
-  auto validFile = TFile::Open("valid.root", "RECREATE");
+  auto validFile = TFile::Open("valid_sec.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto validTree = tpcMov->CopyTree("");
   auto validTreeIni = tpcIni->CopyTree("");
