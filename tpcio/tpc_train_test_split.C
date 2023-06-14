@@ -23,11 +23,9 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
   std::vector<short> *clSector = nullptr;
   tpcIni->SetBranchAddress("clSector",&clSector);
 
-  Int_t myCount = 0;
 
   for (Int_t i(0); i<tpcMov->GetEntries(); ++i){
-    cout << "\r" << i+1 << "/" << tpcMov->GetEntries() << flush;
-
+    cout << "\rProcessing:" << i+1 << "/" << tpcMov->GetEntries() << flush;
 
     if (fSector){
       tpcMov->GetEntry(i);
@@ -42,9 +40,7 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
           else{
             trainList->Enter(i);
           }
-      }
-      // if (all_of(clSector->begin(), clSector->end(), [&] (int j) {return j == clSector[0][j];})){}
-          //all are the same          
+      }       
       else{
         continue;
       }
@@ -54,8 +50,29 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
   }
   cout << endl;
 
-  tpcMov->SetEntryList(trainList);
-  auto trainFile = TFile::Open("train_sec.root", "RECREATE");
+  cout << "Randomizing entries" << endl;
+
+  // shuffle indices
+  int ind[trainList->GetN()];
+  std::iota(ind, ind + trainList->GetN(), 0);
+  
+  std::random_device rd;
+  std::mt19937 g(rd());
+
+  std::shuffle(ind, ind + trainList->GetN(), g);
+
+  auto *RtrainList = new TEntryList();
+
+  for (int i : ind){
+    cout << "\rShuffling index: " << i+1 << "/" << trainList->GetN() << flush;
+    RtrainList->Enter(i);
+  }
+  cout << endl;
+
+  cout << "Writing files" << endl;
+
+  tpcMov->SetEntryList(RtrainList);
+  auto trainFile = TFile::Open("train_sec_r.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto trainTree = tpcMov->CopyTree("");
   auto trainTreeIni = tpcIni->CopyTree("");
@@ -64,10 +81,12 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
 
 
   tpcMov->SetEntryList(validList);
-  auto validFile = TFile::Open("valid_sec.root", "RECREATE");
+  auto validFile = TFile::Open("valid_sec_r.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto validTree = tpcMov->CopyTree("");
   auto validTreeIni = tpcIni->CopyTree("");
   validFile->Write();
   validFile->Close();
+
+  cout << "Finished writing training and validation set" << endl;
 }

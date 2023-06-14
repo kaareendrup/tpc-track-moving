@@ -34,19 +34,19 @@ def main(args):
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
     #config = DotMap(yaml.safe_load(open(config_sel)))
     config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
-
+    configs = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_03_no_sin_tan/hyperparams.yml')))
 
 
     # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
     #Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_4_angular/*.ckpt')[0])
-    Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_5_angular/*.ckpt')[0])
+    Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_03_no_sin_tan/*.ckpt')[0])
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
 
     # valid
     file_valid = ROOT.TFile.Open(config.PATHS.DATA_PATH_VALID)
-    dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=config)
+    dataset_valid = TPCTreeCluster(file_valid,transform=True,conf=configs)
     print("Valid data",len(dataset_valid))
 
 
@@ -81,7 +81,7 @@ def main(args):
     ini = np.array(ini)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='AngularFNet-5')
+    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='FNet_02_no_sin_tan')
     print("Succesfully completed ROOT tree")
 
     print("Valid target data shape: {}".format(target.shape))

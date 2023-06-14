@@ -62,12 +62,11 @@ class LitClusterNet(pl.LightningModule):
         # loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
         # logits[:,2] = torch.sin(logits[:,2])
         # logits[:,3] = torch.tan(logits[:,3])
-        snp = torch.sin(logits[:,2])
-        tgl = torch.tan(logits[:,3])
-        nLogits = torch.cat((logits[:,0].unsqueeze(1),logits[:,1].unsqueeze(1),snp.unsqueeze(1),tgl.unsqueeze(1),logits[:,4].unsqueeze(1)),dim=1)
+        
+        # nLogits = torch.cat((logits[:,0].unsqueeze(1),logits[:,1].unsqueeze(1),snp.unsqueeze(1),tgl.unsqueeze(1),logits[:,4].unsqueeze(1)),dim=1)
 
 
-        loss = self._lossT(nLogits,y)
+        loss = self._lossT(logits,y)
 
         self.log('train_loss', loss,on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
@@ -87,11 +86,8 @@ class LitClusterNet(pl.LightningModule):
         # logits[:,2] = torch.sin(logits[:,2])
         # logits[:,3] = torch.tan(logits[:,3])
 
-        snp = torch.sin(logits[:,2])
-        tgl = torch.tan(logits[:,3])
-        nLogits = torch.cat((logits[:,0].unsqueeze(1),logits[:,1].unsqueeze(1),snp.unsqueeze(1),tgl.unsqueeze(1),logits[:,4].unsqueeze(1)),dim=1)
 
-        loss = self._lossT(nLogits,y)
+        loss = self._lossT(logits,y)
         #loss = F.mse_loss(logits, y)
 
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
