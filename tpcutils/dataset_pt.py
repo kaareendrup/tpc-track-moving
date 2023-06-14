@@ -127,6 +127,10 @@ class TPCTreeCluster(Dataset):
         self.EntriesIni = self.tpcIni.GetEntries()
         self.EntriesMov = self.tpcMov.GetEntries() 
 
+        if conf.DATA_PARAMS.LIMIT_SET:
+            self.EntriesMov = conf.DATA_PARAMS.NSAMPLES
+
+
 
         self.tpcMaxRow = 159 # 159 rows/max number of tpc clusters for padding
 
@@ -173,10 +177,10 @@ class TPCTreeCluster(Dataset):
 
         #ini_counter = self.tpcIni.counter
 
-        ini_vec1 = np.array([iniX, iniAlpha])
-        ini_vec2 = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
+        #ini_vec1 = np.array([iniX, iniAlpha])
+        ini_vec = np.array([iniX, iniAlpha, iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
         # X Alpha Y Z Snp Lambda q2 x y z sector row
-        return ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
+        return ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
     def __movConstruct(self):
 
@@ -242,9 +246,9 @@ class TPCTreeCluster(Dataset):
 
         np_target, mov_clX, mov_clY, mov_clZ = self.__movConstruct()
 
-        # add clX min/max # add temporary demand for same sector tracks
+        # add clX min/max # 
         # rescale perhaps
-        ini_vec1,ini_vec2, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
+        ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
         
 
 
@@ -272,8 +276,12 @@ class TPCTreeCluster(Dataset):
             zDist = zDist[idx_sel]
 
 
+            # coordinate select
+            ini_clZ = np.array(ini_clZ)[idx_sel]
+        
+
         #concatenating everything (easier to implement in O2)
-        input_vector = np.concatenate((ini_vec1,ini_vec2,xDist,yDist,zDist,ini_clSector, ini_clRow))
+        input_vector = np.concatenate((ini_vec, ini_clZ, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
         #checking input vector and padding with zeros if it doesn't match the length
         input_vector = self._checkVectorlen_(input_vector)
 
