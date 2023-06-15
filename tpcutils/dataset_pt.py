@@ -275,18 +275,19 @@ class TPCTreeCluster(Dataset):
             yDist = yDist[idx_sel]
             zDist = zDist[idx_sel]
 
-
             # coordinate select
-            ini_clZ = np.array(ini_clZ)[idx_sel]
-        
+            ini_clZ = torch.tensor(ini_clZ)[idx_sel].float()
+            
 
         #concatenating everything (easier to implement in O2)
-        input_vector = np.concatenate((ini_vec, ini_clZ, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
+        # input_vector = np.concatenate((ini_vec, ini_clZ, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
+        input_vector = np.concatenate((ini_vec, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
         #checking input vector and padding with zeros if it doesn't match the length
         input_vector = self._checkVectorlen_(input_vector)
 
         #convert to tensor
         input_pt = torch.from_numpy(input_vector).float()
+        input_pt = torch.cat((input_pt,ini_clZ))
         target_pt = torch.from_numpy(np_target).float()
 
 
