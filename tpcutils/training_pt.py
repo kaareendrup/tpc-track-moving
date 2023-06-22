@@ -10,6 +10,11 @@ from torch.nn.modules.loss import _Loss
 from torch.nn.functional import softplus
 
 
+def eps_like(tensor: torch.Tensor) -> torch.Tensor:
+    """Return `eps` matching `tensor`'s dtype."""
+    return torch.finfo(tensor.dtype).eps
+
+
 class PiecewiseLinearLR(_LRScheduler):
     """Interpolate learning rate linearly between milestones."""
 
@@ -128,6 +133,19 @@ class VonMisesFisherLoss(_Loss):
         k = torch.norm(prediction, dim=1)
         dotprod = torch.sum(prediction * target, dim=1)
         elements = -self.log_cmk(m, k) - dotprod
+
+        if torch.any(torch.isnan(elements)):
+            torch.set_printoptions(threshold=10_000)
+            print('Found nan values!')
+            print('prediction')
+            print(prediction)
+            print('target')
+            print(target)
+            print('k')
+            print(k)
+            print('dotprod')
+            print(dotprod)
+            
         return elements
 
     @abstractmethod
