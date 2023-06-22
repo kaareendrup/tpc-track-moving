@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from networks.pytorch.nn_networks import FcNet,DeepConvSimpleNet, PseudoGraph, mRNN
-from tpcutils.training_pt import PiecewiseLinearLR, LogCoshLoss, VonMisesFisher2DLoss
+from tpcutils.training_pt import PiecewiseLinearLR, LogCoshLoss, VonMisesFisher2DLoss, eps_like
 from torch.optim import Adam
 
 
@@ -143,7 +143,7 @@ class PseudoGraphNet(pl.LightningModule):
         super().__init__()
 
         # Add 1 to output shape to predict kappa for vMF loss
-        self.net = PseudoGraph(input_shape,config.MODEL.OUTPUT_SHAPE+1)
+        self.net = PseudoGraph(input_shape,config.MODEL.OUTPUT_SHAPE+2)
 
         self.save_hyperparameters()
 
@@ -161,6 +161,7 @@ class PseudoGraphNet(pl.LightningModule):
 
         self._loss1 = LogCoshLoss()
         self._loss2 = VonMisesFisher2DLoss()
+        self._loss3 = VonMisesFisher2DLoss()
 
     def forward(self, x):
         return self.net(x)
@@ -190,24 +191,98 @@ class PseudoGraphNet(pl.LightningModule):
         x, y = train_batch
         logits = self.forward(x)
 
-        # Custom loss step
-        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,3:5]), dim=1) , torch.cat((y[:,:2],y[:,3:]), dim=1) )
-        angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,5].unsqueeze(1)), dim=1), y[:,2].unsqueeze(1) )
+        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,4:5]), dim=1) , torch.cat((y[:,:2],y[:,4:]), dim=1) )
+        # Scale Z loss
+        linloss[:,1] /= 10
+        
+        angloss_phi = torch.abs(
+        # angloss_phi = torch.abs(torch.sin(
+            self._loss2(
+                torch.cat((
+                    torch.asin(logits[:,2].unsqueeze(1)), 
+                    logits[:,5].unsqueeze(1) + eps_like(logits[:,5].unsqueeze(1)),
+                ), dim=1), 
+                torch.asin(y[:,2]).unsqueeze(1) 
+            )
+        ) 
 
-        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
-        self.log('train_loss', loss,on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        angloss_lambda = torch.log(torch.cosh(
+        # angloss_lambda = torch.abs(torch.tan(
+            self._loss3(
+                torch.cat((
+                    torch.atan(logits[:,3].unsqueeze(1)), 
+                    logits[:,6].unsqueeze(1) + eps_like(logits[:,6].unsqueeze(1)),
+                ), dim=1), 
+                torch.atan(y[:,3]).unsqueeze(1)
+            )
+        ))
+        
+        print(torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1).mean(dim=0))
+        loss = torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1).mean()
+        
+        if loss > 10:
+            print(torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1))
+
+        if torch.any(torch.isnan(loss)):
+            print('Found nan loss!')
+            print(torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1))
+
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
         logits = self.forward(x)
 
-        # Custom loss step
-        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,3:5]), dim=1) , torch.cat((y[:,:2],y[:,3:]), dim=1) )
-        # angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,5].unsqueeze(1)), dim=1), y[:,2].unsqueeze(1) )
-        angloss = self._loss2( torch.cat((logits[:,2], logits[:,5]), dim=0), torch.cat((y[:,2],y[:,3]),dim=0) )
+        # New double angloss
+        linloss = self._loss1( torch.cat((logits[:,:2],logits[:,4:5]), dim=1) , torch.cat((y[:,:2],y[:,4:]), dim=1) )
+        # Scale Z loss
+        linloss[:,1] /= 10
+
+        angloss_phi = torch.abs(
+        # angloss_phi = torch.abs(torch.sin(
+            self._loss2(
+                torch.cat((
+                    torch.asin(logits[:,2].unsqueeze(1)), 
+                    logits[:,5].unsqueeze(1) + eps_like(logits[:,5].unsqueeze(1)),
+                ), dim=1), 
+                torch.asin(y[:,2]).unsqueeze(1) 
+            )
+        )
+
+        angloss_lambda = torch.log(torch.cosh(
+        # angloss_lambda = torch.abs(torch.tan(
+            self._loss3(
+                torch.cat((
+                    torch.atan(logits[:,3].unsqueeze(1)), 
+                    logits[:,6].unsqueeze(1) + eps_like(logits[:,6].unsqueeze(1)),
+                ), dim=1), 
+                torch.atan(y[:,3]).unsqueeze(1)
+            )
+        ))
         
-        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+        loss = torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1).mean()
+
+        if loss > 10:
+            print(torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1))
+
+        if torch.any(torch.isnan(loss)):
+            torch.set_printoptions(threshold=10_000)
+            print(' ')
+            print('Found nan values!')
+            print('logits')
+            print(logits.size())
+            print(logits)
+            print('phi')
+            print(torch.asin(logits[:,2].unsqueeze(1)))
+            print('lambda')
+            print(torch.atan(logits[:,3].unsqueeze(1)))
+            print('kappas')
+            print(logits[:,5].unsqueeze(1) + eps_like(x))
+            print(logits[:,6].unsqueeze(1) + eps_like(x))
+            print('loss')
+            print(torch.cat((linloss, angloss_phi.unsqueeze(1), angloss_lambda.unsqueeze(1)), dim=1))
+
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
 
 
