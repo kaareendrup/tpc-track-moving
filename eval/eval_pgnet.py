@@ -6,13 +6,16 @@ import numpy as np
 
 from networks.pytorch.nn_lightning import PseudoGraphNet
 from tpcutils.dataset_pt import TPCTreeCluster
-from tpcutils.data import SeparatedDataHandler,read_MC_tracks
+from tpcutils.data import SeparatedDataHandler, read_MC_tracks
 from sklearn.model_selection import train_test_split
 
 import glob
 import yaml
+from tqdm import tqdm
 
-from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from config.paths import dpaths as dp
 from dotmap import DotMap
@@ -21,20 +24,23 @@ import ROOT
 
 import argparse
 
-import mplhep as hep
-hep.style.use(hep.style.ALICE)
+# import mplhep as hep
+# hep.style.use(hep.style.ALICE)
 
 from array import array
 from ROOT import addressof
 
 from tpcio.TreeIO import create_arrays, write_ROOT_TREE
 
+from tpcutils.training_pt import VonMisesFisher2DLoss, eps_like 
+
 def main(args):
 
 
     config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
 
-    Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=9-val_loss=-0.18.ckpt')
+    # Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=1-val_loss=0.10.ckpt')
+    Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=3-val_loss=0.55.ckpt')
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
@@ -52,9 +58,10 @@ def main(args):
 
     imposedTB,dz = [], []
 
-    for i in range(data_len):
-        sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
-        sys.stdout.flush()
+    for i in tqdm(range(data_len)):
+    # for i in tqdm(range(100)):
+        # sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
+        # sys.stdout.flush()
 
         input, tar = dataset_valid.__getitem__(i)
 
@@ -63,10 +70,11 @@ def main(args):
         dz.append(dataset_valid.tpcMov.dz)
 
         target.append(tar.detach().numpy())
-        input = input.unsqueeze(0).unsqueeze(0)
+        # input = input.unsqueeze(0).unsqueeze(0)
+        input = input.unsqueeze(0)
 
         with torch.no_grad():
-            yhat,_ = Net(input)
+            yhat = Net(input)
             
             preds.append(yhat.detach().numpy())
 
@@ -86,23 +94,22 @@ def main(args):
     #ax = ax.flatten()
 
     names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
-    lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
+    # lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
+    lims = np.array([[-25,25],[-20,20],[-1,1],[-2.4,2.4],[-25,25]])
     # skal plotte prediction:
     # MoveTrackRefit" vs "iniTrackRef - MoveTrackRefit" (for Z should be iniTrackRef.getZ() - dz - MoveTrackRefit.getZ()
     #
 
     text_size = 10
-    for i in range(5):
-        y = preds[:,i]
-        x = target[:,i]
-        xy = np.vstack([x,y])
-        z = gaussian_kde(xy)(xy)
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax[i].scatter(x, y, c=z, s=10)
-        #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
-
-
+    for i in tqdm(range(5)):
+        # y = preds[:,i]
+        # x = target[:,i]
+        # xy = np.vstack([x,y])
+        # z = gaussian_kde(xy)(xy)
+        # idx = z.argsort()
+        # x, y, z = x[idx], y[idx], z[idx]
+        # ax[i].scatter(x, y, c=z, s=10)
+        ax[i].hist2d(target[:,i],preds[:,i],bins=50)
 
         ax[i].set_xlabel('MovTrackRefit',size=text_size)
         ax[i].set_ylabel('NN Prediction',size=text_size)
@@ -123,10 +130,24 @@ def main(args):
 
     plt.show()
 
-    f.savefig("RNNpred.png",bbox_inches='tight')
+    f.savefig("PGNetpred.png",bbox_inches='tight')
 
+    # vMF error distribution
+    f,ax = plt.subplots(1,1,figsize=(9,8),subplot_kw={'projection':'3d'})
 
+    angloss_phi = torch.abs(
+    # angloss_phi = torch.abs(torch.sin(
+        VonMisesFisher2DLoss()(
+            torch.cat((
+                torch.asin(torch.tensor(preds[:,2]).unsqueeze(1)), 
+                torch.tensor(preds[:,5]).unsqueeze(1) + eps_like(torch.tensor(preds[:,5]).unsqueeze(1)),
+            ), dim=1), 
+            torch.asin(torch.tensor(target[:,2])).unsqueeze(1) 
+        )
+    )
 
+    surf = ax.plot_trisurf(target[:,2], preds[:,2], angloss_phi, cmap=cm.jet, linewidth=0.1)
+    f.savefig("PGNetvMF.png",bbox_inches='tight')
 
     return 0
 
