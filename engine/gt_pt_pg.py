@@ -14,7 +14,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveraging
+from pytorch_lightning.callbacks import ModelCheckpoint, StochasticWeightAveraging, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 
 import ROOT
@@ -75,6 +75,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
                                                mode='min',
                                                save_top_k=1),
                             #    StochasticWeightAveraging(swa_lrs=config.HYPER_PARAMS.SWA_LRS),
+                                LearningRateMonitor(logging_interval='epoch'),
                                ],
                     max_epochs=config.HYPER_PARAMS.MAX_EPOCHS,
                     logger=logger,
