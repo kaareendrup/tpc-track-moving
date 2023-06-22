@@ -155,7 +155,7 @@ class PseudoGraphNet(pl.LightningModule):
     def __init__(self,input_shape,config,training_dataloader,**kwargs):
         super().__init__()
 
-        # Add 1 to output shape to predict kappa for vMF loss
+        # Add 2 to output shape to predict kappa for double vMF loss
         self.net = PseudoGraph(input_shape,config.MODEL.OUTPUT_SHAPE+2)
 
         self.save_hyperparameters()
@@ -209,7 +209,6 @@ class PseudoGraphNet(pl.LightningModule):
         linloss[:,1] /= 10
         
         angloss_phi = torch.abs(
-        # angloss_phi = torch.abs(torch.sin(
             self._loss2(
                 torch.cat((
                     torch.asin(logits[:,2].unsqueeze(1)), 
@@ -220,7 +219,6 @@ class PseudoGraphNet(pl.LightningModule):
         ) 
 
         angloss_lambda = torch.log(torch.cosh(
-        # angloss_lambda = torch.abs(torch.tan(
             self._loss3(
                 torch.cat((
                     torch.atan(logits[:,3].unsqueeze(1)), 
