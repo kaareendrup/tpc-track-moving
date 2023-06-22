@@ -141,7 +141,7 @@ class DeepConvSimpleNet(nn.Module):
 
 class PseudoGraph(nn.Module):
 
-    def __init__(self, input_shape, output_shape=5):
+    def __init__(self, input_shape, output_shape=7):
         super(PseudoGraph, self).__init__()
 
         # 7 for the track vector, 5 for the xyz (+2) coordinate of each cluster
@@ -178,46 +178,23 @@ class PseudoGraph(nn.Module):
 
         x_vec = x[:,:self._n_track_params]
         x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
-        if torch.any(torch.isnan(x)):
-            print(("\n 1"))
-            print(x)
         x = torch.cat([x_graph, x_repeat], dim=2)
-        if torch.any(torch.isnan(x)):
-            print(("\n 2"))
-            print(x)
         x = F.leaky_relu(self.norm1(self.fc1(x)))
-        if torch.any(torch.isnan(x)):
-            print(("\n 3"))
-            print(x)
         x = self.dropout1(x)
         x = F.leaky_relu(self.norm2(self.fc2(x)))
-        if torch.any(torch.isnan(x)):
-            print(("\n 4"))
-            print(x)
         x = self.dropout2(x)
         x = F.leaky_relu(self.norm3(self.fc3(x)))
-        if torch.any(torch.isnan(x)):
-            print(("\n 5"))
-            print(x)
         x = self.dropout3(x)
         x = F.leaky_relu(self.fc3_5(x))
-        if torch.any(torch.isnan(x)):
-            print(("\n 6"))
-            print(x)
         x = self.dropout4(x)
 
         x = nn.Flatten()(x)
 
         x = self.fc4(x)
-        if torch.any(torch.isnan(x)):
-            print(x)
-        # x = self.fc5(x)
 
         x[:,2] = torch.sigmoid(x[:,2]) * 2 - 1
         x[:,-2] = F.relu(x[:,-2])
         x[:,-1] = F.relu(x[:,-1])
-        if torch.any(torch.isnan(x)):
-            print(x)
 
         return x
 
