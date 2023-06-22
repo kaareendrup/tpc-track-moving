@@ -24,8 +24,10 @@ class LitClusterNet(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self._loss1 = LogCoshLoss()
-        self._loss2 = VonMisesFisher2DLoss()
+        #self._loss1 = LogCoshLoss()
+        # self._loss1 = nn.MSELoss()
+        # self._loss2 = VonMisesFisher2DLoss()
+        self._lossT = nn.MSELoss()
 
     def forward(self, x):
         return self.net(x)
@@ -55,10 +57,16 @@ class LitClusterNet(pl.LightningModule):
 
 
         #loss = F.mse_loss(logits, y)
-        linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
-        angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
+        #linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
+        #angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
+        # loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+        # logits[:,2] = torch.sin(logits[:,2])
+        # logits[:,3] = torch.tan(logits[:,3])
+        
+        # nLogits = torch.cat((logits[:,0].unsqueeze(1),logits[:,1].unsqueeze(1),snp.unsqueeze(1),tgl.unsqueeze(1),logits[:,4].unsqueeze(1)),dim=1)
 
-        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+
+        loss = self._lossT(logits,y)
 
         self.log('train_loss', loss,on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
@@ -71,10 +79,15 @@ class LitClusterNet(pl.LightningModule):
 
         # logits: Y:0 Z:1 Phi:2 Tgl:3 q2:4
         # y: Y:0 Z:1 Phi:2 Tgl:3 q2:4
-        linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
-        angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
+        # linloss = self._loss1( torch.cat((logits[...,:2], logits[...,4].unsqueeze(1)),dim=1) , torch.cat((y[...,:2],y[...,4].unsqueeze(1)),dim=1) )
+        # angloss = self._loss2( torch.cat((logits[:,2].unsqueeze(1), logits[:,3].unsqueeze(1)), dim=1).float(), torch.cat((y[...,2].unsqueeze(1),y[...,3].unsqueeze(1)),dim=1).float())
+        # loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+        #Y,Z,Snp,Tgl,q2pt = logits # and batch
+        # logits[:,2] = torch.sin(logits[:,2])
+        # logits[:,3] = torch.tan(logits[:,3])
 
-        loss = torch.cat((linloss, angloss.unsqueeze(1)), dim=1).mean()
+
+        loss = self._lossT(logits,y)
         #loss = F.mse_loss(logits, y)
 
         self.log('val_loss', loss,on_step=False,on_epoch=True,prog_bar=True,logger=True)
