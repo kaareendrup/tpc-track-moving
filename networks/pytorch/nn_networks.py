@@ -141,41 +141,129 @@ class DeepConvSimpleNet(nn.Module):
 
 class PseudoGraph(nn.Module):
 
-    def __init__(self,input_shape,output_shape=5):
-        super(PseudoGraph,self).__init__()
+    def __init__(self, input_shape, output_shape=7):
+        super(PseudoGraph, self).__init__()
 
-        # 7 for the track vector, 5 for the xyz (+2) coordinate of each cluster
-        self._n_node_coor = 5
+        # 7 for the track vector, 6 (5) for the xyz (+3, changed from 2) coordinate of each cluster
+        self._n_node_coor = 6
         self._n_track_params = 7
 
         in_shape_2D = self._n_track_params + self._n_node_coor
         n_clusters = int((input_shape - self._n_track_params) / self._n_node_coor)
 
-        self.fc1 = nn.Linear(in_shape_2D, 50)
-        self.fc2 = nn.Linear(50, 50)
-        self.fc3 = nn.Linear(50, 50)
-        self.fc4 = nn.Linear(n_clusters*50, output_shape)
+        self.fc1 = nn.Linear(in_shape_2D, 16)
+        self.fc2 = nn.Linear(16, 32)
+        self.fc3 = nn.Linear(32, 64)
+        self.fc3_5 = nn.Linear(64, 32)
+
+        self.fc4 = nn.Linear(n_clusters*32, output_shape)
+
+        # Create dropouts
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.25)
+        self.dropout3 = nn.Dropout(0.25)
+        self.dropout4 = nn.Dropout(0.25)
+
+        # Create batchnorms. Param is number of input channels = clusters
+        self.norm1 = nn.BatchNorm1d(n_clusters)
+        self.norm2 = nn.BatchNorm1d(n_clusters)
+        self.norm3 = nn.BatchNorm1d(n_clusters)
 
     def forward(self, x):
 
+        torch.set_printoptions(threshold=10_000)
+
         x_graph = x[:,self._n_track_params:]
-        x_graph = torch.reshape(x_graph, (x_graph.size()[0],-1,self._n_node_coor))
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0], -1, self._n_node_coor))
 
         x_vec = x[:,:self._n_track_params]
         x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
-
         x = torch.cat([x_graph, x_repeat], dim=2)
-
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = F.leaky_relu(self.norm1(self.fc1(x)))
+        x = self.dropout1(x)
+        x = F.leaky_relu(self.norm2(self.fc2(x)))
+        x = self.dropout2(x)
+        x = F.leaky_relu(self.norm3(self.fc3(x)))
+        x = self.dropout3(x)
+        x = F.leaky_relu(self.fc3_5(x))
+        x = self.dropout4(x)
 
         x = nn.Flatten()(x)
 
         x = self.fc4(x)
 
+        x[:,2] = torch.sigmoid(x[:,2]) * 2 - 1
+        x[:,-2] = F.relu(x[:,-2])
+        x[:,-1] = F.relu(x[:,-1])
+
         return x
 
+
+class PseudoGraphSinglePhi(PseudoGraph):
+
+    def __init__(self, input_shape, output_shape=7):
+        super().__init__(input_shape, output_shape)
+
+    def forward(self, x):
+
+        torch.set_printoptions(threshold=10_000)
+
+        x_graph = x[:,self._n_track_params:]
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0], -1, self._n_node_coor))
+
+        x_vec = x[:,:self._n_track_params]
+        x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
+        x = torch.cat([x_graph, x_repeat], dim=2)
+        x = F.leaky_relu(self.norm1(self.fc1(x)))
+        x = self.dropout1(x)
+        x = F.leaky_relu(self.norm2(self.fc2(x)))
+        x = self.dropout2(x)
+        x = F.leaky_relu(self.norm3(self.fc3(x)))
+        x = self.dropout3(x)
+        x = F.leaky_relu(self.fc3_5(x))
+        x = self.dropout4(x)
+
+        x = nn.Flatten()(x)
+
+        x = self.fc4(x)
+
+        x[:,0] = torch.sigmoid(x[:,0]) * 2 - 1
+        x[:,-1] = F.relu(x[:,-1])
+
+        return x
+
+class PseudoGraphSingleLambda(PseudoGraph):
+
+    def __init__(self, input_shape, output_shape=7):
+        super().__init__(input_shape, output_shape)
+
+    def forward(self, x):
+
+        torch.set_printoptions(threshold=10_000)
+
+        x_graph = x[:,self._n_track_params:]
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0], -1, self._n_node_coor))
+
+        x_vec = x[:,:self._n_track_params]
+        x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
+        x = torch.cat([x_graph, x_repeat], dim=2)
+        x = F.leaky_relu(self.norm1(self.fc1(x)))
+        x = self.dropout1(x)
+        x = F.leaky_relu(self.norm2(self.fc2(x)))
+        x = self.dropout2(x)
+        x = F.leaky_relu(self.norm3(self.fc3(x)))
+        x = self.dropout3(x)
+        x = F.leaky_relu(self.fc3_5(x))
+        x = self.dropout4(x)
+
+        x = nn.Flatten()(x)
+
+        x = self.fc4(x)
+
+        # x[:,0] = torch.sigmoid(x[:,0]) * 2 - 1
+        x[:,-1] = F.relu(x[:,-1])
+
+        return x
 
 class mRNN(nn.Module):
     def __init__(self, input_size, output_size, hidden_dim, n_layers):
