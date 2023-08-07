@@ -2,7 +2,7 @@ import sys
 
 from tpcutils.dataset_pt import TPCTreeCluster
 
-from networks.pytorch.nn_lightning import PseudoGraphNet
+from networks.pytorch.nn_lightning import PseudoGraphNetSingle
 from matplotlib import pyplot as plt
 import pandas as pd
 from sklearn.metrics import roc_curve, auc
@@ -25,9 +25,9 @@ from dotmap import DotMap
 
 from config.paths import dpaths as dp
 
-def generalised_trainer_pseudo_graph(**kwargs):
+def generalised_trainer_pseudo_graph(which, **kwargs):
 
-    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
+    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_single.yml')))
 
     if config.DATA_PARAMS.IS_ROOT:
         print("Using the tpc-trackStudy file in ROOT format")
@@ -56,7 +56,7 @@ def generalised_trainer_pseudo_graph(**kwargs):
     print(dataset_train._shape())
     print('should be dataset_train._shape() + 5')
 
-    model = PseudoGraphNet(dataset_train._shape()+5, config, train_loader)
+    model = PseudoGraphNetSingle(dataset_train._shape()+5, config, train_loader, which)
 
     logger = TensorBoardLogger(name="logs",save_dir=config.PATHS.SAVE_PATH + '/' + config.PATHS.MODEL_DIR)
 
@@ -98,4 +98,6 @@ def generalised_trainer_pseudo_graph(**kwargs):
 
 if __name__=='__main__':
 
-    generalised_trainer_pseudo_graph()
+    which = 3
+
+    generalised_trainer_pseudo_graph(which)

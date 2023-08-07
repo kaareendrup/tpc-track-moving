@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from networks.pytorch.nn_lightning import PseudoGraphNet
+from networks.pytorch.nn_lightning import PseudoGraphNetSingle
 from tpcutils.dataset_pt import TPCTreeCluster
 from tpcutils.data import SeparatedDataHandler, read_MC_tracks
 from sklearn.model_selection import train_test_split
@@ -27,20 +27,14 @@ import argparse
 # import mplhep as hep
 # hep.style.use(hep.style.ALICE)
 
-from array import array
-from ROOT import addressof
 
-from tpcio.TreeIO import create_arrays, write_ROOT_TREE
-
-from tpcutils.training_pt import VonMisesFisher2DLoss, eps_like 
-
-def main(args):
+def main(which, args):
 
 
     config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
 
     # Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=1-val_loss=0.10.ckpt')
-    Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=18-val_loss=0.01.ckpt')
+    Net = PseudoGraphNetSingle.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=11-val_loss=0.05.ckpt')
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
@@ -85,12 +79,12 @@ def main(args):
     imposedTB,dz = np.array(imposedTB), np.array(dz)
     
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='RNN')
-    print("Finished writing tree")
-    print("Valid target data shape: {}".format(target.shape))
-    print("Prediction valid data shape: {}".format(preds.shape))
+    # write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='RNN')
+    # print("Finished writing tree")
+    # print("Valid target data shape: {}".format(target.shape))
+    # print("Prediction valid data shape: {}".format(preds.shape))
 
-    f,ax = plt.subplots(1,5,figsize=(16,4))
+    f,ax = plt.subplots(1,1,figsize=(10,8))
     #ax = ax.flatten()
 
     names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
@@ -102,53 +96,33 @@ def main(args):
     #
 
     text_size = 10
-    for i in tqdm(range(5)):
-        # y = preds[:,i]
-        # x = target[:,i]
-        # xy = np.vstack([x,y])
-        # z = gaussian_kde(xy)(xy)
-        # idx = z.argsort()
-        # x, y, z = x[idx], y[idx], z[idx]
-        # ax[i].scatter(x, y, c=z, s=10)
-        ax[i].hist2d(target[:,i],preds[:,i],bins=bins[i])
+    # y = preds[:,i]
+    # x = target[:,i]
+    # xy = np.vstack([x,y])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # x, y, z = x[idx], y[idx], z[idx]
+    # ax[i].scatter(x, y, c=z, s=10)
 
-        ax[i].set_xlabel('MovTrackRefit',size=text_size)
-        ax[i].set_ylabel('NN Prediction',size=text_size)
-        ax[i].set_title("{}".format(names[i]),size=text_size)
+    ax.hist2d(target[:,which],preds[:,0],bins=bins[which])
+    ax.set_ylabel('NN Prediction',size=text_size)
+    ax.set_xlabel('MovTrackRefit',size=text_size)
+    ax.set_title("{}".format(names[which]),size=text_size)
 
-        ax[i].set_xlim(*lims[i])
-        ax[i].set_ylim(*lims[i])
+    ax.set_xlim(*lims[which])
+    ax.set_ylim(*lims[which])
 
-        ax[i].tick_params(axis='both', which='major', labelsize=text_size)
+    ax.tick_params(axis='both', which='major', labelsize=text_size)
 
-        ax[i].set_aspect('equal')
+    ax.set_aspect('equal')
 
-        ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
+    ax.axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
     # ax[-1].set_visible(False)
 
     plt.tight_layout()
-
     plt.show()
-
     f.savefig("PGNetpred.png",bbox_inches='tight')
-
-    # vMF error distribution
-    f,ax = plt.subplots(1,1,figsize=(9,8),subplot_kw={'projection':'3d'})
-
-    angloss_phi = torch.abs(
-    # angloss_phi = torch.abs(torch.sin(
-        VonMisesFisher2DLoss()(
-            torch.cat((
-                torch.asin(torch.tensor(preds[:,2]).unsqueeze(1)), 
-                torch.tensor(preds[:,5]).unsqueeze(1) + eps_like(torch.tensor(preds[:,5]).unsqueeze(1)),
-            ), dim=1), 
-            torch.asin(torch.tensor(target[:,2])).unsqueeze(1) 
-        )
-    )
-
-    surf = ax.plot_trisurf(target[:,2], preds[:,2], angloss_phi, cmap=cm.jet, linewidth=0.1)
-    f.savefig("PGNetvMF.png",bbox_inches='tight')
 
     return 0
 
@@ -156,6 +130,7 @@ def main(args):
 
 if __name__=='__main__':
 
+    which = 3
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--select",
@@ -168,4 +143,4 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    main(args)
+    main(which, args)
