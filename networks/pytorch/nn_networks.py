@@ -199,6 +199,35 @@ class PseudoGraph(nn.Module):
         return x
 
 
+class PseudoGraphSingleLinear(PseudoGraph):
+
+    def __init__(self, input_shape, output_shape=7):
+        super().__init__(input_shape, output_shape)
+
+    def forward(self, x):
+
+        torch.set_printoptions(threshold=10_000)
+
+        x_graph = x[:,self._n_track_params:]
+        x_graph = torch.reshape(x_graph, (x_graph.size()[0], -1, self._n_node_coor))
+
+        x_vec = x[:,:self._n_track_params]
+        x_repeat = torch.repeat_interleave(x_vec.unsqueeze(1), x_graph.size()[1], 1)
+        x = torch.cat([x_graph, x_repeat], dim=2)
+        x = F.leaky_relu(self.norm1(self.fc1(x)))
+        x = self.dropout1(x)
+        x = F.leaky_relu(self.norm2(self.fc2(x)))
+        x = self.dropout2(x)
+        x = F.leaky_relu(self.norm3(self.fc3(x)))
+        x = self.dropout3(x)
+        x = F.leaky_relu(self.fc3_5(x))
+        x = self.dropout4(x)
+
+        x = nn.Flatten()(x)
+
+        x = self.fc4(x)
+
+
 class PseudoGraphSinglePhi(PseudoGraph):
 
     def __init__(self, input_shape, output_shape=7):
@@ -232,6 +261,7 @@ class PseudoGraphSinglePhi(PseudoGraph):
 
         return x
 
+
 class PseudoGraphSingleLambda(PseudoGraph):
 
     def __init__(self, input_shape, output_shape=7):
@@ -264,6 +294,7 @@ class PseudoGraphSingleLambda(PseudoGraph):
         x[:,-1] = F.relu(x[:,-1])
 
         return x
+
 
 class mRNN(nn.Module):
     def __init__(self, input_size, output_size, hidden_dim, n_layers):
