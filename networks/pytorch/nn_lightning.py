@@ -6,7 +6,7 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from networks.pytorch.nn_networks import FcNet, DeepConvSimpleNet, PseudoGraph, PseudoGraphSinglePhi, PseudoGraphSingleLambda, mRNN
+from networks.pytorch.nn_networks import FcNet, DeepConvSimpleNet, PseudoGraph, PseudoGraphSinglePhi, PseudoGraphSingleLambda, PseudoGraphSingleLinear ,mRNN
 from tpcutils.training_pt import PiecewiseLinearLR, LogCoshLoss, VonMisesFisher2DLoss, eps_like
 from torch.optim import Adam
 
@@ -319,11 +319,16 @@ class PseudoGraphNetSingle(pl.LightningModule):
         if self._which == 2:
             print('Using PGSPhi')
             self.net = PseudoGraphSinglePhi(input_shape,config.MODEL.OUTPUT_SHAPE+1)
-        else:
+            self._loss = VonMisesFisher2DLoss()
+
+        elif self._which == 3:
             print('Using PGSLambda')
             self.net = PseudoGraphSingleLambda(input_shape,config.MODEL.OUTPUT_SHAPE+1)
+            self._loss = VonMisesFisher2DLoss()
 
-        self._loss1 = VonMisesFisher2DLoss()
+        else:
+            self.net = PseudoGraphSingleLinear(input_shape,config.MODEL.OUTPUT_SHAPE)
+            self._loss = LogCoshLoss()
 
     def forward(self, x):
         return self.net(x)
@@ -356,7 +361,7 @@ class PseudoGraphNetSingle(pl.LightningModule):
 
         loss = torch.mean(
             torch.abs(
-                self._loss1(logits, y[:,self._which].unsqueeze(1))
+                self._loss(logits, y[:,self._which].unsqueeze(1))
             )
         )
 
@@ -370,7 +375,7 @@ class PseudoGraphNetSingle(pl.LightningModule):
 
         loss = torch.mean(
             torch.abs(
-                self._loss1(logits, y[:,self._which].unsqueeze(1))
+                self._loss(logits, y[:,self._which].unsqueeze(1))
             )
         )
 
