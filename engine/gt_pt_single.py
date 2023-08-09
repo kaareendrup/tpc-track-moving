@@ -25,9 +25,11 @@ from dotmap import DotMap
 
 from config.paths import dpaths as dp
 
-def generalised_trainer_pseudo_graph(which, **kwargs):
+def generalised_trainer_pseudo_graph(**kwargs):
 
-    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_single.yml')))
+    # config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_single.yml')))
+    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_single_z.yml')))
+    which = config.MODEL.WHICH
 
     if config.DATA_PARAMS.IS_ROOT:
         print("Using the tpc-trackStudy file in ROOT format")
@@ -98,6 +100,4 @@ def generalised_trainer_pseudo_graph(which, **kwargs):
 
 if __name__=='__main__':
 
-    which = 3
-
-    generalised_trainer_pseudo_graph(which)
+    generalised_trainer_pseudo_graph()

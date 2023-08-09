@@ -28,13 +28,16 @@ import argparse
 # hep.style.use(hep.style.ALICE)
 
 
-def main(which, args):
+def main(args):
 
 
-    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
+    # config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_root.yml')))
+    config = DotMap(yaml.safe_load(open('/home/kaare/alice/tpc-track-moving/config/config_file_single_phi.yml')))
+    which = config.MODEL.WHICH
 
     # Net = PseudoGraphNet.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=1-val_loss=0.10.ckpt')
-    Net = PseudoGraphNetSingle.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=11-val_loss=0.05.ckpt')
+    # Net = PseudoGraphNetSingle.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph01/PseudoGraph_epoch=11-val_loss=0.05.ckpt')
+    Net = PseudoGraphNetSingle.load_from_checkpoint('/home/kaare/alice/ServiceTask/models/pytorch/PseudoGraph_single_phi/PseudoGraph_single_epoch=15-val_loss=0.01.ckpt')
     Net.eval()
     print("#"*15)
     print("Model successfully loaded...")
@@ -47,6 +50,7 @@ def main(which, args):
 
     target = []
     preds = []
+    mov = []
     data_len = dataset_valid.__len__()
     ini=[]
 
@@ -72,10 +76,20 @@ def main(which, args):
             
             preds.append(yhat.detach().numpy())
 
+        if which == 2:
+            if i == 0:
+                print(dataset_valid.tpcIni.iniTrackRef.getSnp())
+            mov.append(dataset_valid.tpcIni.iniTrackRef.getSnp())
+        if which == 3:
+            if i == 0:
+                print(dataset_valid.tpcIni.iniTrackRef.getTgl())
+            mov.append(dataset_valid.tpcIni.iniTrackRef.getTgl())
+
     target = np.array(target)
     preds = np.array(preds).squeeze()
 
     ini = np.array(ini)
+    mov = np.array(mov)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
     
 
@@ -124,13 +138,33 @@ def main(which, args):
     plt.show()
     f.savefig("PGNetpred.png",bbox_inches='tight')
 
+    f,ax = plt.subplots(1,1,figsize=(10,8))
+
+    ax.hist2d(preds[:,0]-target[:,which], preds[:,0]-mov, bins=bins[which])
+    ax.set_xlabel('NN - IniTrack',size=text_size)
+    ax.set_ylabel(' NN - MovTrack',size=text_size)
+    ax.set_title("{}".format(names[which]),size=text_size)
+
+    ax.set_xlim(*lims[which])
+    ax.set_ylim(*lims[which])
+
+    ax.tick_params(axis='both', which='major', labelsize=text_size)
+
+    ax.set_aspect('equal')
+
+    ax.axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
+
+    # ax[-1].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
+    f.savefig("PGNetpred_diff.png",bbox_inches='tight')
     return 0
 
 
 
 if __name__=='__main__':
 
-    which = 3
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--select",
@@ -143,4 +177,4 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    main(which, args)
+    main(args)
