@@ -11,6 +11,9 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
   auto *trainList = new TEntryList();
   auto *validList = new TEntryList();
 
+  auto* trainListIni = new TEntryList();
+  auto* validListIni = new TEntryList();
+
   Bool_t fSector = kTRUE;
 
   auto *inputFile = TFile::Open(inputfile, "READ");
@@ -30,15 +33,16 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
     if (fSector){
       tpcMov->GetEntry(i);
       tpcIni->GetEntry(counter);
-
       
       if (std::adjacent_find(clSector->begin(), clSector->end(), std::not_equal_to<short>()) == clSector->end()){
         Float_t r = gRandom->Rndm();
           if (r<0.2){
             validList->Enter(i);
+            validListIni->Enter(counter);
           }
           else{
             trainList->Enter(i);
+            trainListIni->Enter(counter);
           }
       }       
       else{
@@ -72,7 +76,8 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
   cout << "Writing files" << endl;
 
   tpcMov->SetEntryList(RtrainList);
-  auto trainFile = TFile::Open("train_sec_r.root", "RECREATE");
+  // tpcIni->SetEntryList(trainListIni);
+  auto trainFile = TFile::Open("train_sec_15082023_tot.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto trainTree = tpcMov->CopyTree("");
   auto trainTreeIni = tpcIni->CopyTree("");
@@ -81,7 +86,8 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
 
 
   tpcMov->SetEntryList(validList);
-  auto validFile = TFile::Open("valid_sec_r.root", "RECREATE");
+  // tpcIni->SetEntryList(validListIni);
+  auto validFile = TFile::Open("valid_sec_15082023_tot.root", "RECREATE");
   // Because we set the list, only entry numbers in trainList are copied
   auto validTree = tpcMov->CopyTree("");
   auto validTreeIni = tpcIni->CopyTree("");
