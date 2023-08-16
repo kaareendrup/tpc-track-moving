@@ -5,6 +5,7 @@ import pandas as pd
 
 import torch
 from torch.utils.data import Dataset
+import torch.nn.functional as F
 import operator
 
 import ROOT
@@ -144,7 +145,8 @@ class TPCTreeCluster(Dataset):
             self.config= conf
 
         clusters = self.config.DATA_PARAMS.TPC_SETTINGS.TPC_CLUSTERS
-        self.__shape = 7 + (clusters*5) # 7 ini params, clx,cly,clz,sector,row
+        #removed X,Alpha..
+        self.__shape = 5 + (clusters*3) + clusters + 2 # 7 ini params, clx,cly,clz, ini_clz, dz, imposedTB -- no more ,sector,row
 
 
 
@@ -180,6 +182,7 @@ class TPCTreeCluster(Dataset):
 
         #ini_vec1 = np.array([iniX, iniAlpha])
         ini_vec = np.array([iniX, iniAlpha, iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
+        ini_vec = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
         # X Alpha Y Z Snp Lambda q2 x y z sector row
         return ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
@@ -193,6 +196,7 @@ class TPCTreeCluster(Dataset):
         MovQ2Pt = self.tpcMov.movTrackRef.getQ2Pt()
 
         np_target = np.array([ MovY, MovZ, MovSnp, MovTgl, MovQ2Pt ])
+        np_target = np.array([ MovY, MovZ]) 
 
         #construct moved tpc clusters
         #mov_clX = np.array(self.tpcMov.clX)
@@ -201,13 +205,15 @@ class TPCTreeCluster(Dataset):
         mov_clX = self.tpcMov.clX
         mov_clY = self.tpcMov.clY
         mov_clZ = self.tpcMov.clZ
+        dz = np.array([self.tpcMov.dz])
+        imposedTB = np.array([self.tpcMov.imposedTB])
 
         # n_copy = self.tpcMov.copy
         # maxCopy = self.tpcMov.maxCopy
 
         # mov_counter = self.tpcMov.counter
         # Y Z Snp Lambda q2pt
-        return np_target, mov_clX, mov_clY, mov_clZ#, mov_counter, n_copy, maxCopy
+        return np_target, mov_clX, mov_clY, mov_clZ, dz, imposedTB#, mov_counter, n_copy, maxCopy
 
     def __match_tracks(self):
 
@@ -226,7 +232,9 @@ class TPCTreeCluster(Dataset):
     def _checkVectorlen_(self,array):
 
         if len(array) != self.__shape:
-            return np.pad(array,(0,self.__shape-len(array)),"constant")
+            # return np.pad(array,(0,self.__shape-len(array)),"constant")
+            # return F.pad(array, (0,self.__shape-len(array)), "constant", 0)
+            return F.pad(array, (array + self.__shape+10-len(array)), "constant", 0)
         else:
             return array
 
@@ -245,7 +253,7 @@ class TPCTreeCluster(Dataset):
             print("Tracks are matched incorrectly, exiting...")
             sys.exit(1)
 
-        np_target, mov_clX, mov_clY, mov_clZ = self.__movConstruct()
+        np_target, mov_clX, mov_clY, mov_clZ, dz, imposedTB = self.__movConstruct()
 
         # add clX min/max # 
         # rescale perhaps
@@ -259,7 +267,7 @@ class TPCTreeCluster(Dataset):
         
         if not self.transform:
             ini_clSector = self._padForClusters(ini_clSector)
-            ini_clRow = self._padForClusters(ini_clRow)
+            ini_clRow = self._padForClusters(ini_clRow) 
 
             xDist = self._padForClusters(xDist)
             yDist = self._padForClusters(yDist)
@@ -278,17 +286,21 @@ class TPCTreeCluster(Dataset):
 
             # coordinate select
             ini_clZ = torch.tensor(ini_clZ)[idx_sel].float()
+            # ini_clZ = np.array(ini_clZ)[idx_sel]
+
             
 
         #concatenating everything (easier to implement in O2)
-        # input_vector = np.concatenate((ini_vec, ini_clZ, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
-        input_vector = np.concatenate((ini_vec, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
+        input_vector = np.concatenate((ini_vec, xDist, yDist, zDist, dz, imposedTB)) # ,ini_clSector, ini_clRow))
+        # input_vector = np.concatenate((ini_vec, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
         #checking input vector and padding with zeros if it doesn't match the length
-        input_vector = self._checkVectorlen_(input_vector)
+        # input_vector = self._checkVectorlen_(input_vector)
 
         #convert to tensor
         input_pt = torch.from_numpy(input_vector).float()
         input_pt = torch.cat((input_pt,ini_clZ))
+        input_pt = self._checkVectorlen_(input_pt)
+
         target_pt = torch.from_numpy(np_target).float()
 
 
