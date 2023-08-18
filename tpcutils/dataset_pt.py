@@ -180,7 +180,7 @@ class TPCTreeCluster(Dataset):
         #ini_counter = self.tpcIni.counter
 
         #ini_vec1 = np.array([iniX, iniAlpha])
-        ini_vec = np.array([iniX, iniAlpha, iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
+        #ini_vec = np.array([iniX, iniAlpha, iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
         ini_vec = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
         # X Alpha Y Z Snp Lambda q2 x y z sector row
         return ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
@@ -194,8 +194,8 @@ class TPCTreeCluster(Dataset):
         MovTgl = self.tpcMov.movTrackRef.getTgl()
         MovQ2Pt = self.tpcMov.movTrackRef.getQ2Pt()
 
-        np_target = np.array([ MovY, MovZ, MovSnp, MovTgl, MovQ2Pt ])
-        np_target = np.array([ MovY, MovZ]) 
+        np_moved = np.array([ MovY, MovZ, MovSnp, MovTgl, MovQ2Pt ])
+        #np_target = np.array([ MovY, MovZ]) 
 
         #construct moved tpc clusters
         #mov_clX = np.array(self.tpcMov.clX)
@@ -212,7 +212,7 @@ class TPCTreeCluster(Dataset):
 
         # mov_counter = self.tpcMov.counter
         # Y Z Snp Lambda q2pt
-        return np_target, mov_clX, mov_clY, mov_clZ, dz, imposedTB#, mov_counter, n_copy, maxCopy
+        return np_moved, mov_clX, mov_clY, mov_clZ, dz, imposedTB#, mov_counter, n_copy, maxCopy
 
     def __match_tracks(self):
 
@@ -220,8 +220,8 @@ class TPCTreeCluster(Dataset):
         # n_copy = self.tpcMov.copy
         # maxCopy = self.tpcMov.maxCopy
 
+        
         self.tpcIni.GetEntry(counter)
-
 
 
     def _getDistortionEffects(self,arr1,arr2):
@@ -237,6 +237,15 @@ class TPCTreeCluster(Dataset):
         else:
             return array
 
+    def _create_target(self,ini,mov,dz):
+        
+        Y_dis = mov[0] - ini[0]
+        Z_dis = mov[1] + dz - ini[1]
+        Snp_dis = mov[2] - ini[2]
+        Tgl_dis = mov[3] - ini[3]
+        Q2Pt_dis = mov[4] - ini[4]
+
+        return np.array([Y_dis, Z_dis, Snp_dis, Tgl_dis, Q2Pt_dis])
 
     def __getitem__(self,idx):
 
@@ -252,7 +261,7 @@ class TPCTreeCluster(Dataset):
             print("Tracks are matched incorrectly, exiting...")
             sys.exit(1)
 
-        np_target, mov_clX, mov_clY, mov_clZ, dz, imposedTB = self.__movConstruct()
+        mov_vec, mov_clX, mov_clY, mov_clZ, dz, imposedTB = self.__movConstruct()
 
         # add clX min/max # 
         # rescale perhaps
@@ -294,6 +303,8 @@ class TPCTreeCluster(Dataset):
         # input_vector = np.concatenate((ini_vec, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
         #checking input vector and padding with zeros if it doesn't match the length
         # input_vector = self._checkVectorlen_(input_vector)
+
+        np_target = self._create_target(ini_vec,mov_vec,dz)
 
         #convert to tensor
         input_pt = torch.from_numpy(input_vector).float()
