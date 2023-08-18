@@ -13,7 +13,7 @@ def create_arrays(tree,var=None):
     ini_var = array('f',[0])
 
     tree.Branch("NN_{}".format(var), my_var, '<float>')
-    tree.Branch("MovTrackRef_{}".format(var), tar_var, '<float>')
+    tree.Branch("movTrackRef_{}".format(var), tar_var, '<float>')
     tree.Branch("iniTrackRef_{}".format(var), ini_var, '<float>')
 
     return my_var, tar_var, ini_var
@@ -34,28 +34,28 @@ def write_ROOT_TREE(tar,pred,ini,dz,imposedTB,tree_name='FNet'):
 
     myY, tarY, iniY = create_arrays(tree,"Y")
     myZ, tarZ, iniZ = create_arrays(tree,"Z")
-    myPhi, tarPhi, iniPhi = create_arrays(tree,"phi")
-    myLambda, tarLambda, iniLambda = create_arrays(tree,"Lambda")
-    myqPt, tarqPt, iniqPt = create_arrays(tree,"q2pt")
+    myPhi, tarPhi, iniPhi = create_arrays(tree,"Snp")
+    myLambda, tarLambda, iniLambda = create_arrays(tree,"Tgl")
+    myqPt, tarqPt, iniqPt = create_arrays(tree,"Q2Pt")
 
     var_imposedTB = create_SingleArr(tree,"imposedTB")
     var_dz = create_SingleArr(tree,"dz")
 
-
+    print("pred shape",pred.shape[0])
     for i in range(pred.shape[0]):
 
         myY[0] = float(pred[i,0])
         myZ[0] = float(pred[i,1])
-        myPhi[0] = float(pred[i,2])
-        myLambda[0] = float(pred[i,3])
-        myqPt[0] = float(pred[i,4])
+        # myPhi[0] = float(pred[i,2])
+        # myLambda[0] = float(pred[i,3])
+        # myqPt[0] = float(pred[i,4])
 
 
         tarY[0] = float(tar[i,0])
         tarZ[0] = float(tar[i,1])
-        tarPhi[0] = float(tar[i,2])
-        tarLambda[0] = float(tar[i,3])
-        tarqPt[0] = float(tar[i,4])
+        # tarPhi[0] = float(tar[i,2])
+        # tarLambda[0] = float(tar[i,3])
+        # tarqPt[0] = float(tar[i,4])
 
         iniY[0] = float(ini[i,0])
         iniZ[0] = float(ini[i,1])
