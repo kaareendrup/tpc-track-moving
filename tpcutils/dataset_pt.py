@@ -135,7 +135,7 @@ class TPCTreeCluster(Dataset):
 
 
         self.tpcMaxRow = 159 # 159 rows/max number of tpc clusters for padding
-
+        self.ndimTPC = 250
         self.nKalmanFits = 6
 
         self.transform=transform
@@ -146,8 +146,9 @@ class TPCTreeCluster(Dataset):
 
         clusters = self.config.DATA_PARAMS.TPC_SETTINGS.TPC_CLUSTERS
         #removed X,Alpha..
-        self.__shape = 5 + (clusters*3) + clusters + 2 # 7 ini params, clx,cly,clz, ini_clz, dz, imposedTB -- no more ,sector,row
+        self.__shape = 5 + (clusters*3) + clusters + 1 # 7 ini params, clx,cly,clz, ini_clz, dz -- no more ,sector,row
 
+        self.NormArr = np.array([250,250, 1, 5, 40])
 
 
     def _padForClusters(self,array):
@@ -179,12 +180,11 @@ class TPCTreeCluster(Dataset):
         ini_clZ = self.tpcIni.clZ
 
         #ini_counter = self.tpcIni.counter
-
-        #ini_vec1 = np.array([iniX, iniAlpha])
-        #ini_vec = np.array([iniX, iniAlpha, iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
+        
         ini_vec = np.array([iniY, iniZ, iniSnp, iniTgl, iniQ2Pt])
+        ini_vec = self.normalize_vector(ini_vec)
         # X Alpha Y Z Snp Lambda q2 x y z sector row
-        return ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
+        return iniX, iniAlpha, ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow
 
     def __movConstruct(self):
 
@@ -195,25 +195,23 @@ class TPCTreeCluster(Dataset):
         MovTgl = self.tpcMov.movTrackRef.getTgl()
         MovQ2Pt = self.tpcMov.movTrackRef.getQ2Pt()
 
-        np_moved = np.array([ MovY, MovZ, MovSnp, MovTgl, MovQ2Pt ])
+        
         #np_target = np.array([ MovY, MovZ]) 
-
+        mov_vec = np.array([MovY, MovZ, MovSnp, MovTgl, MovQ2Pt])
+        mov_vec = self.normalize_vector(mov_vec)
         #construct moved tpc clusters
-        #mov_clX = np.array(self.tpcMov.clX)
-        #mov_clY = np.array(self.tpcMov.clY)
-        #mov_clZ = np.array(self.tpcMov.clZ)
         mov_clX = self.tpcMov.clX
         mov_clY = self.tpcMov.clY
         mov_clZ = self.tpcMov.clZ
-        dz = np.array([self.tpcMov.dz])
-        imposedTB = np.array([self.tpcMov.imposedTB])
+        dz = np.array([self.tpcMov.dz]) / self.ndimTPC
+        # imposedTB = np.array([self.tpcMov.imposedTB])
 
         # n_copy = self.tpcMov.copy
         # maxCopy = self.tpcMov.maxCopy
 
         # mov_counter = self.tpcMov.counter
         # Y Z Snp Lambda q2pt
-        return np_moved, mov_clX, mov_clY, mov_clZ, dz, imposedTB#, mov_counter, n_copy, maxCopy
+        return mov_vec, mov_clX, mov_clY, mov_clZ, dz, #imposedTB#, mov_counter, n_copy, maxCopy
 
     def __match_tracks(self):
 
@@ -246,7 +244,12 @@ class TPCTreeCluster(Dataset):
         Tgl_dis = mov[3] - ini[3]
         Q2Pt_dis = mov[4] - ini[4]
 
-        return np.array([Y_dis, Z_dis, Snp_dis, Tgl_dis, Q2Pt_dis])
+        return np.array([Y_dis, Z_dis, Snp_dis, Tgl_dis, Q2Pt_dis],dtype=float)
+    
+    def normalize_vector(self,arr):
+
+        return arr/self.NormArr
+
 
     def __getitem__(self,idx):
 
@@ -262,21 +265,21 @@ class TPCTreeCluster(Dataset):
             print("Tracks are matched incorrectly, exiting...")
             sys.exit(1)
 
-        mov_vec, mov_clX, mov_clY, mov_clZ, dz, imposedTB = self.__movConstruct()
+        mov_vec, mov_clX, mov_clY, mov_clZ, dz = self.__movConstruct()
 
         # add clX min/max # 
         # rescale perhaps
-        ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
+        iniX, iniAlpha, ini_vec, ini_clX, ini_clY, ini_clZ, ini_clSector, ini_clRow = self.__iniConstruct()
         
 
 
-        xDist = np.array(self._getDistortionEffects(mov_clX,ini_clX))
-        yDist = np.array(self._getDistortionEffects(mov_clY,ini_clY))
-        zDist = np.array(self._getDistortionEffects(mov_clZ,ini_clZ))
+        xDist = np.array(self._getDistortionEffects(mov_clX,ini_clX)) / self.ndimTPC
+        yDist = np.array(self._getDistortionEffects(mov_clY,ini_clY)) / self.ndimTPC
+        zDist = np.array(self._getDistortionEffects(mov_clZ,ini_clZ)) / self.ndimTPC
         
         if not self.transform:
-            ini_clSector = self._padForClusters(ini_clSector)
-            ini_clRow = self._padForClusters(ini_clRow) 
+            # ini_clSector = self._padForClusters(ini_clSector)
+            # ini_clRow = self._padForClusters(ini_clRow) 
 
             xDist = self._padForClusters(xDist)
             yDist = self._padForClusters(yDist)
@@ -287,23 +290,21 @@ class TPCTreeCluster(Dataset):
             else:
                 idx_sel = select_tpc_clusters_idx(config.DATA_PARAMS.TPC_SETTINGS,len(xDist)-1)
 
-            ini_clSector = ini_clSector[idx_sel]
-            ini_clRow = ini_clRow[idx_sel]
+            # ini_clSector = ini_clSector[idx_sel]
+            # ini_clRow = ini_clRow[idx_sel]
             xDist = xDist[idx_sel]
             yDist = yDist[idx_sel]
             zDist = zDist[idx_sel]
 
-            # coordinate select
-            ini_clZ = torch.tensor(ini_clZ)[idx_sel].float()
-            # ini_clZ = np.array(ini_clZ)[idx_sel]
+            #coordinate select
+            ini_clZ = torch.tensor(ini_clZ)[idx_sel].float() / self.ndimTPC
+            
 
             
 
         #concatenating everything (easier to implement in O2)
-        input_vector = np.concatenate((ini_vec, xDist, yDist, zDist, dz, imposedTB)) # ,ini_clSector, ini_clRow))
-        # input_vector = np.concatenate((ini_vec, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
-        #checking input vector and padding with zeros if it doesn't match the length
-        # input_vector = self._checkVectorlen_(input_vector)
+        input_vector = np.concatenate((ini_vec, dz, xDist, yDist, zDist)) # ,ini_clSector, ini_clRow))
+        
 
         np_target = self._create_target(ini_vec,mov_vec,dz)
 
