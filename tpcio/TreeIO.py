@@ -46,16 +46,16 @@ def write_ROOT_TREE(tar,pred,ini,dz,imposedTB,tree_name='FNet'):
 
         myY[0] = float(pred[i,0])
         myZ[0] = float(pred[i,1])
-        # myPhi[0] = float(pred[i,2])
-        # myLambda[0] = float(pred[i,3])
-        # myqPt[0] = float(pred[i,4])
+        myPhi[0] = float(pred[i,2])
+        myLambda[0] = float(pred[i,3])
+        myqPt[0] = float(pred[i,4])
 
 
         tarY[0] = float(tar[i,0])
         tarZ[0] = float(tar[i,1])
-        # tarPhi[0] = float(tar[i,2])
-        # tarLambda[0] = float(tar[i,3])
-        # tarqPt[0] = float(tar[i,4])
+        tarPhi[0] = float(tar[i,2])
+        tarLambda[0] = float(tar[i,3])
+        tarqPt[0] = float(tar[i,4])
 
         iniY[0] = float(ini[i,0])
         iniZ[0] = float(ini[i,1])

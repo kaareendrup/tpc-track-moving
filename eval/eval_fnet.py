@@ -31,15 +31,20 @@ from tpcio.TreeIO import create_arrays, write_ROOT_TREE
 
 def main(args):
 
+    path_cosmos = '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/cosmos'
+
+    pSel = 'FNet_0003_iniRef_Za0_Tgla0_dz_above_0'
+    TreeName = pSel
+
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
     #config = DotMap(yaml.safe_load(open(config_sel)))
     config = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/py_dir/config/config_file.yml')))
-    configs = DotMap(yaml.safe_load(open('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/cosmos/nFNet_001/hyperparams.yml')))
+    configs = DotMap(yaml.safe_load(open(path_cosmos + '/' + f'{pSel}/hyperparams.yml')))
 
 
     # Net = LitClusterNet.load_from_checkpoint(glob.glob(dp['model_path'] + '/' + args.select + '/' + '*.ckpt')[0])
     #Net = LitClusterNet.load_from_checkpoint(glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/aurora/FNet_4_angular/*.ckpt')[0])
-    file = glob.glob('/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/cosmos/nFNet_001/*.ckpt')[-1]
+    file = glob.glob(path_cosmos + '/' +f'{pSel}/*.ckpt')[-1]
     print("using network file: ",file)
     Net = LitClusterNet.load_from_checkpoint(file)
     Net.eval()
@@ -83,51 +88,51 @@ def main(args):
     ini = np.array(ini)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name='nFNet_001')
+    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name=f'{TreeName}')
     print("Succesfully completed ROOT tree")
 
     print("Valid target data shape: {}".format(target.shape))
     print("Prediction valid data shape: {}".format(preds.shape))
 
-    f,ax = plt.subplots(1,5,figsize=(16,4))
-    #ax = ax.flatten()
+    # f,ax = plt.subplots(1,5,figsize=(16,4))
+    # #ax = ax.flatten()
 
-    names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
-    lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
+    # names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
+    # lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
 
-    text_size = 10
-    for i in range(5):
-        y = preds[:,i]
-        x = target[:,i]
-        xy = np.vstack([x,y])
-        z = gaussian_kde(xy)(xy)
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax[i].scatter(x, y, c=z, s=10)
-        #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
+    # text_size = 10
+    # for i in range(5):
+    #     y = preds[:,i]
+    #     x = target[:,i]
+    #     xy = np.vstack([x,y])
+    #     z = gaussian_kde(xy)(xy)
+    #     idx = z.argsort()
+    #     x, y, z = x[idx], y[idx], z[idx]
+    #     ax[i].scatter(x, y, c=z, s=10)
+    #     #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
 
 
 
-        ax[i].set_xlabel('MovTrackRefit',size=text_size)
-        ax[i].set_ylabel('NN Prediction',size=text_size)
-        ax[i].set_title("{}".format(names[i]),size=text_size)
+    #     ax[i].set_xlabel('MovTrackRefit',size=text_size)
+    #     ax[i].set_ylabel('NN Prediction',size=text_size)
+    #     ax[i].set_title("{}".format(names[i]),size=text_size)
 
-        ax[i].set_xlim(*lims[i])
-        ax[i].set_ylim(*lims[i])
+    #     ax[i].set_xlim(*lims[i])
+    #     ax[i].set_ylim(*lims[i])
 
-        ax[i].tick_params(axis='both', which='major', labelsize=text_size)
+    #     ax[i].tick_params(axis='both', which='major', labelsize=text_size)
 
-        ax[i].set_aspect('equal')
+    #     ax[i].set_aspect('equal')
 
-        ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
+    #     ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
 
-    # ax[-1].set_visible(False)
+    # # ax[-1].set_visible(False)
 
-    plt.tight_layout()
+    # plt.tight_layout()
 
-    plt.show()
+    # plt.show()
 
-    f.savefig("pred.png",bbox_inches='tight')
+    # f.savefig("pred.png",bbox_inches='tight')
 
 
 

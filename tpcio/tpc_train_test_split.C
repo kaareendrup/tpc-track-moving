@@ -11,7 +11,7 @@ using namespace std;
 // template<typename  T>
 void tpc_train_test_split(const char* inputfile)//, const char* savepath)
 {
-  const char* fileName = "n6_18082023_Zl0_Tgll0_dzShift_100_150";
+  const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_shift_100_150";;
   // const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_positiveshift";
   // const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_negativeshift";
 
