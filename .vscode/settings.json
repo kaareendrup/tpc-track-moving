@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "tpc_train_test_split.C": "cpp",
+        "qa_plots.C": "cpp",
+        "qa_2024feb.C": "cpp",
+        "*.icc": "cpp"
+    }
+}

@@ -27,47 +27,66 @@ def create_SingleArr(tree,total_var=None):
 
     return var
 
-def write_ROOT_TREE(tar,pred,ini,dz,imposedTB,tree_name='FNet'):
-    file = ROOT.TFile.Open(f"TPC-SCD-NN-Prediction-{tree_name}.root", "RECREATE")
+def create_vector(tree,total_var=None):
+
+    var = ROOT.std.vector('float')()  
+    tree.Branch(f"{total_var}",var)
+
+    return var
+
+def write_ROOT_TREE(tar,pred,preds_normed,ini,mov,clusters,cluster_idx,dz,imposedTB,tree_name='FNet'):
+    file = ROOT.TFile.Open(f"trees/TPC-SCD-NN-Prediction-{tree_name}.root", "RECREATE")
 
     tree = ROOT.TTree("tpc","tree")
 
-    myY, tarY, iniY = create_arrays(tree,"Y")
-    myZ, tarZ, iniZ = create_arrays(tree,"Z")
-    myPhi, tarPhi, iniPhi = create_arrays(tree,"Snp")
-    myLambda, tarLambda, iniLambda = create_arrays(tree,"Tgl")
-    myqPt, tarqPt, iniqPt = create_arrays(tree,"Q2Pt")
+    data_dic = {}
+    # cleaning everything up
+    name_space = ['Y','Z','Snp','Tgl','Q2Pt']
+    track_types = ['NN','target','tNN','movTrackRef','iniTrackRef']
+    data_grouped = [pred,tar,preds_normed,mov,ini]
+    out_dic = {}
+    for ii,track_key in enumerate(track_types):
+        for jj,name_key in enumerate(name_space):
+            out_dic[f'{track_key}_{name_key}'] = create_SingleArr(tree,f"{track_key}_{name_key}")
+
+            data_dic[f'{track_key}_{name_key}'] = data_grouped[ii][:,jj]
+
 
     var_imposedTB = create_SingleArr(tree,"imposedTB")
     var_dz = create_SingleArr(tree,"dz")
 
+    # ini_clX = create_vector(tree,"ini_clX")
+    cluster_names = ['ini_clX','ini_clY','ini_clZ','mov_clX','mov_clY','mov_clZ','ini_clSector','ini_clRow']
+    vector_var = []
+    for name in cluster_names:
+        vector_var.append(create_vector(tree,name))
+    
+
     print("pred shape",pred.shape[0])
+    print("#"*25)
+    
     for i in range(pred.shape[0]):
+        sys.stdout.write("\rprocessing %i/%i : %.2f%%" % (i+1,pred.shape[0],(i+1)/pred.shape[0]*100))
+        sys.stdout.flush()
 
-        myY[0] = float(pred[i,0])
-        myZ[0] = float(pred[i,1])
-        myPhi[0] = float(pred[i,2])
-        myLambda[0] = float(pred[i,3])
-        myqPt[0] = float(pred[i,4])
+        for track_key in track_types:
+            for name_key in name_space:
+                out_dic[f"{track_key}_{name_key}"][0] = float(data_dic[f"{track_key}_{name_key}"][i])
 
-
-        tarY[0] = float(tar[i,0])
-        tarZ[0] = float(tar[i,1])
-        tarPhi[0] = float(tar[i,2])
-        tarLambda[0] = float(tar[i,3])
-        tarqPt[0] = float(tar[i,4])
-
-        iniY[0] = float(ini[i,0])
-        iniZ[0] = float(ini[i,1])
-        iniPhi[0] = float(ini[i,2])
-        iniLambda[0] = float(ini[i,3])
-        iniqPt[0] = float(ini[i,4])
+        
+        for typeCluster in range(len(clusters[i])):
+            for nClusters in cluster_idx[i]:
+                vector_var[typeCluster].push_back(clusters[i][typeCluster][int(nClusters)])
+        
 
         var_imposedTB[0] = float(imposedTB[i])
         var_dz[0] = float(dz[i])
 
         tree.Fill()
 
+        for typeCluster in range(len(clusters[i])):
+            vector_var[typeCluster].clear()
+
+
     tree.Write()
 
-    return 0
