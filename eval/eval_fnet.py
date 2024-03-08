@@ -29,11 +29,16 @@ from ROOT import addressof
 
 from tpcio.TreeIO import create_arrays, write_ROOT_TREE
 
+def transform(vec):
+    NormArr = np.array([250,250, 1, 5, 40])
+
+    return vec * NormArr
+
 def main(args):
 
     path_cosmos = '/Users/joachimcarlokristianhansen/st_O2_ML_SC_DS/TPC-analyzer/TPCTracks/models/cosmos'
 
-    pSel = 'FNet_0003_iniRef_Za0_Tgla0_dz_above_0'
+    pSel = 'FNet_0007_iniRef_Za0_Tgla0_dz_positiveshift'
     TreeName = pSel
 
     #config_sel = dp['model_path'] + '/' + args.select + '/' + 'logs/version_0/hparams.yaml'
@@ -59,15 +64,31 @@ def main(args):
 
     target = []
     preds = []
+    preds_normed = []
     data_len = dataset_valid.__len__()
     ini=[]
+    clusters = []
+    aini_clX, aini_clY, aini_clZ,amov_clX, amov_clY, amov_clZ,aini_clSector, aini_clRow = [],[],[],[],[],[],[],[]
+    sel_cluster_idx = []
+
+    mov_vecs = []
 
     imposedTB,dz = [], []
+
     for i in range(data_len):
+    # for i in range(500):
         sys.stdout.write("\rprocessing %i/%i" % (i+1,data_len))
         sys.stdout.flush()
+        #, ini_clY, ini_clZ, mov_clX, mov_clY, mov_clZ,ini_clSector, ini_clRow
+        input, tar, ini_vec, mov_vec,ini_clX, ini_clY, ini_clZ,mov_clX, mov_clY, mov_clZ,ini_clSector, ini_clRow, idx_sel  = dataset_valid.__getitem__(i,fVecs=True)
+        ini_vec, mov_vec = transform(ini_vec), transform(mov_vec)
+        # ini_vecs.append(ini_vec)
+        mov_vecs.append(list(mov_vec))
 
-        input, tar = dataset_valid.__getitem__(i)
+        clusters.append([list(ini_clX),list(ini_clY),list(ini_clZ),list(mov_clX), list(mov_clY), list(mov_clZ),list(ini_clSector),list(ini_clRow)])
+        sel_cluster_idx.append(idx_sel)
+
+            
 
         target.append(tar.detach().numpy())
 
@@ -79,65 +100,35 @@ def main(args):
 
         with torch.no_grad():
             yhat = Net(input)
+            yhat = yhat.detach().numpy()
+            preds.append(yhat)
+            preds_normed.append(transform(yhat))
 
-            preds.append(yhat.detach().numpy())
-
+    print("\n")
+    print("Finished predictions loop")
     target = np.array(target)
+    # print("target shape:",target.shape)
     preds = np.array(preds).squeeze()
+    # print("preds shape:",preds.shape)
+    preds_normed = np.array(preds_normed).squeeze()
+    # print("preds normed shape:",preds_normed.shape)
+    mov_vecs = np.array(mov_vecs)
+    sel_cluster_idx = np.array(sel_cluster_idx)
+    
 
     ini = np.array(ini)
+    # print("ini shape:", ini.shape)
     imposedTB,dz = np.array(imposedTB), np.array(dz)
 
-    write_ROOT_TREE(target,preds,ini,dz,imposedTB,tree_name=f'{TreeName}')
+    print("Writing ROOT tree")
+    write_ROOT_TREE(target,preds,preds_normed,ini,mov_vecs,clusters,sel_cluster_idx,dz,imposedTB,tree_name=f'{TreeName}')
     print("Succesfully completed ROOT tree")
 
-    print("Valid target data shape: {}".format(target.shape))
-    print("Prediction valid data shape: {}".format(preds.shape))
-
-    # f,ax = plt.subplots(1,5,figsize=(16,4))
-    # #ax = ax.flatten()
-
-    # names = ["Y","Z",r"$\mathrm{sin}(\phi)$",r"$\lambda$",r"$q/p_\mathrm{T}$"]
-    # lims = np.array([[-25,25],[-200,200],[-np.pi,np.pi],[-2.4,2.4],[-25,25]])
-
-    # text_size = 10
-    # for i in range(5):
-    #     y = preds[:,i]
-    #     x = target[:,i]
-    #     xy = np.vstack([x,y])
-    #     z = gaussian_kde(xy)(xy)
-    #     idx = z.argsort()
-    #     x, y, z = x[idx], y[idx], z[idx]
-    #     ax[i].scatter(x, y, c=z, s=10)
-    #     #ax[i].hist2d(preds[:,i],target[:,i],bins=50)
+    
 
 
 
-    #     ax[i].set_xlabel('MovTrackRefit',size=text_size)
-    #     ax[i].set_ylabel('NN Prediction',size=text_size)
-    #     ax[i].set_title("{}".format(names[i]),size=text_size)
-
-    #     ax[i].set_xlim(*lims[i])
-    #     ax[i].set_ylim(*lims[i])
-
-    #     ax[i].tick_params(axis='both', which='major', labelsize=text_size)
-
-    #     ax[i].set_aspect('equal')
-
-    #     ax[i].axline( (0,0),slope=1,linestyle='--',color='red',linewidth = 0.5)
-
-    # # ax[-1].set_visible(False)
-
-    # plt.tight_layout()
-
-    # plt.show()
-
-    # f.savefig("pred.png",bbox_inches='tight')
-
-
-
-
-    return 0
+    return 0x0
 
 
 

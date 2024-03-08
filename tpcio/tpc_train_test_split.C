@@ -11,8 +11,8 @@ using namespace std;
 // template<typename  T>
 void tpc_train_test_split(const char* inputfile)//, const char* savepath)
 {
-  const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_shift_100_150";;
-  // const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_positiveshift";
+//   const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_shift_100_150";;
+  const char* fileName = "n6_26022024_iniRef_Z_Above0_Tgl_Above0_dz_positiveshift";
   // const char* fileName = "n6_18082023_iniRef_Z_Above0_Tgl_Above0_dz_negativeshift";
 
 
@@ -46,7 +46,8 @@ void tpc_train_test_split(const char* inputfile)//, const char* savepath)
     cout << "\rProcessing:" << i+1 << "/" << tpcMov->GetEntries() << flush;
 
     tpcMov->GetEntry(i);
-    if (dz < 100 || dz > 150) continue;
+    // if (dz < 100 || dz > 150) continue;
+    if (dz<0) continue;
     tpcIni->GetEntry(counter);
     // track restrictions
     if (iniTrackRef->getZ()<0) continue;
